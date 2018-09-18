@@ -150,7 +150,7 @@ void AliTPCPIDEtaQA::UserCreateOutputObjects()
   // Binning for multiplicity
   Int_t nMultBins = 40;
   Double_t multLow = 0.;
-  Double_t multUp = 20000;
+  Double_t multUp = GetIsPbPb() ? 20000 : 4000;
   
   CentralityEstimatorType centType = GetCentralityEstimatorType();
   if (centType == kITSTPCtracklets) {
