@@ -477,7 +477,7 @@ THnSparseF* AliTPCcalibResidualPID::InitialisePIDQAHist(TString name, TString ti
   //
   title.Append(";p (GeV/c);tpc signal;particle ID;assumed particle;nSigmaTPC;nSigmaTOF;centrality");
   const Int_t kNdim = 7;
-  Int_t    binsHistQA[kNdim] = {135, 1980,    4,    5, 40, 10,  IsPbPb ? 40 : 40 };
+  Int_t    binsHistQA[kNdim] = {135, 1980,    4,    5, 40, 10,  40 };
   Double_t xminHistQA[kNdim] = {0.1,   20, -0.5, -0.5, -10, -5,   0.};
   Double_t xmaxHistQA[kNdim] = {50., 2000,  3.5,  4.5,  10,  5, IsPbPb ? 20000 : 4000};
   THnSparseF* h = new THnSparseF(name.Data(), title.Data(), kNdim, binsHistQA, xminHistQA, xmaxHistQA);
