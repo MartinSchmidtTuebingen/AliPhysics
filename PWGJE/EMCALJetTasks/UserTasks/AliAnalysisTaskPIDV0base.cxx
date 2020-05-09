@@ -557,9 +557,9 @@ Bool_t AliAnalysisTaskPIDV0base::TPCCutMIGeo(const AliVTrack* track, const AliVE
     return kFALSE;
   
   const Short_t sign = track->Charge();
-  Double_t xyz[50];
-  Double_t pxpypz[50];
-  Double_t cv[100];
+  Double_t xyz[3];
+  Double_t pxpypz[3];
+  Double_t cv[21];
 
   track->GetXYZ(xyz);
   track->GetPxPyPz(pxpypz);
