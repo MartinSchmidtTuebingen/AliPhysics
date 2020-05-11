@@ -28,22 +28,22 @@ Typical parameters to run on 11a1* (MC_pp@7TeV):
 void postConfig(AliAnalysisTaskIDFragmentationFunction* task, TString suffixPIDtaskJets1, TString suffixPIDtaskJets2,
                 TString suffixPIDtaskInclusive1, TString suffixPIDtaskInclusive2) {
 
-  task->SetBckgType(AliAnalysisTaskIDFragmentationFunction::kBckgPerp2,
-        AliAnalysisTaskIDFragmentationFunction::kBckgPerp,
-          AliAnalysisTaskIDFragmentationFunction::kBckgPerp2Area,
-            AliAnalysisTaskIDFragmentationFunction::kBckgOutAJStat,
-            AliAnalysisTaskIDFragmentationFunction::kBckgOut2J);
+//   task->SetBckgType(AliAnalysisTaskIDFragmentationFunction::kBckgPerp2,
+//         AliAnalysisTaskIDFragmentationFunction::kBckgPerp,
+//           AliAnalysisTaskIDFragmentationFunction::kBckgPerp2Area,
+//             AliAnalysisTaskIDFragmentationFunction::kBckgOutAJStat,
+//             AliAnalysisTaskIDFragmentationFunction::kBckgOut2J);
 
-  task->SetBranchRecBackClusters("");
+//   task->SetBranchRecBackClusters("");
 
    // Define histo bins
    //task->SetFFHistoBins(23, 5, 120, 480, 0., 120.,70,  0., 7., 52, 0.,  1.3);
-   task->SetQATrackHistoBins(2400,0,120); // 50 MeV binning for comp to track dN/dpt prel. plot
+//    task->SetQATrackHistoBins(2400,0,120); // 50 MeV binning for comp to track dN/dpt prel. plot
    
    // JS on
-   task->SetJSMode();
+//    task->SetJSMode();
    
-   task->SetEffMode(0);
+//    task->SetEffMode(0);
   
   // Set name of PID framework tasks
    
@@ -190,7 +190,7 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunctionAllCent(
 // _______________________________________________________________________________________
 
 AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
-        const char* recJetsBranch,
+  const char* recJetsBranch,
   const char* recJetsBackBranch,
   const char* genJetsBranch,
   const char* jetType,
@@ -268,128 +268,36 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
              typeTracks.Data(), filterMaskTracks));
    
    if(debug>=0) task->SetDebugLevel(debug);
-   
-   Printf("Rec Jets %s", branchRecJets.Data());
-   Printf("Back Rec Jets %s", branchRecBackJets.Data());
-   Printf("Gen Jets %s", branchGenJets.Data());
-   Printf("Jet Type %s", typeJets.Data());
-   Printf("Track Type %s", typeTracks.Data());
-   
-   Printf("Radius cut: %f", radius);
-   Printf("FilterMaskTracks: %d", filterMaskTracks);
-   Printf("MC_pThard_cut: %f", MC_pThard_cut);
-   
-   // attach the filter mask and options
-   TString cAdd = "";
-   cAdd += Form("%02d",(int)((TMath::Abs(radius)+0.01)*10.));
-   cAdd += Form("_B%d",(int)((kBackgroundMode)));
-   cAdd += Form("_Filter%05d",filterMask);
-   cAdd += Form("_Cut%05d",PtTrackMin);
-   cAdd += Form("%s",BrOpt.Data());
-   cAdd += Form("%s",BrOpt2.Data());
 
-   Printf("%s",cAdd.Data());
-
-   TString cAddb = "";
-   cAddb += Form("%02d",(int)((radiusBckg+0.01)*10.));
-   cAddb += Form("_B%d",(int)((kBackgroundMode)));
-   cAddb += Form("_Filter%05d",filterMask);
-   cAddb += Form("_Cut%05d",PtTrackMin);
-   cAddb += Form("%s",BrOpt.Data());
-   cAddb += Form("%s",BrOpt2.Data());
-
-   Printf("%s",cAddb.Data());
-
-   TString cAddmc = "";
-   cAddmc += Form("%02d",(int)((TMath::Abs(radius)+0.01)*10.));
-   cAddmc += Form("_B%d",(int)((kBackgroundMode)));
-   cAddmc += Form("_Filter%05d",filterMask);
-   cAddmc += Form("_Cut%05d",PtTrackMin);
-   cAddmc += Form("%s",BrOpt3.Data());
-
-   Printf("%s",cAddmc.Data());
-
-
-   if(branchRecJets.Contains("AOD")&&branchRecJets.Contains("jets")&&!branchRecJets.Contains("MC"))branchRecJets = branchRecJets + cAdd;
-   if(branchRecJets.Contains("AOD")&&branchRecJets.Contains("cluster")&&!branchRecJets.Contains("MC"))branchRecJets = branchRecJets + cAdd;
-
-   if(branchRecBackJets.Contains("back")&&branchRecBackJets.Contains("cluster")&&!branchRecBackJets.Contains("MC"))branchRecBackJets = branchRecBackJets + cAddb; 
-
-   if(branchGenJets.Contains("AOD")&&branchGenJets.Contains("MC"))branchGenJets = branchGenJets + cAddmc;
-
-   Printf("Gen jets branch %s: ", branchGenJets.Data());
-   Printf("Rec jets branch %s: ", branchRecJets.Data());
-   Printf("Jet backg branch %s: ", branchRecBackJets.Data());
-
-   if(!branchRecJets.Contains("noRecJets")) task->SetBranchRecJets(branchRecJets);
-   if(!branchRecBackJets.Contains("noRecBackJets")) task->SetBranchRecBackJets(branchRecBackJets);
-   if(!branchGenJets.Contains("noGenJets")) task->SetBranchGenJets(branchGenJets);
-
-
-   if(typeTracks.Contains("AODMC2b"))      task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackAODMCChargedAcceptance);
-   else if(typeTracks.Contains("AODMC2"))  task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackAODMCCharged);
-   else if(typeTracks.Contains("AODMC"))   task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackAODMCAll);
-   else if(typeTracks.Contains("KINE2b"))  task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackKineChargedAcceptance);
-   else if(typeTracks.Contains("KINE2"))   task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackKineCharged);
-   else if(typeTracks.Contains("KINE"))    task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackKineAll);
-   else if(typeTracks.Contains("AODb"))    task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackAODCuts);
-   else if(typeTracks.Contains("AOD"))     task->SetTrackTypeGen(AliAnalysisTaskIDFragmentationFunction::kTrackAOD);
-   else if(typeTracks.Contains("trackTypeUndef")) task->SetTrackTypeGen(0); // undefined
-   else Printf("trackType %s not found", typeTracks.Data());
-
-   if(typeJets.Contains("AODMCb"))         task->SetJetTypeGen(AliAnalysisTaskIDFragmentationFunction::kJetsGenAcceptance);
-   else if(typeJets.Contains("AODMC"))     task->SetJetTypeGen(AliAnalysisTaskIDFragmentationFunction::kJetsGen);
-   else if(typeJets.Contains("KINEb"))     task->SetJetTypeGen(AliAnalysisTaskIDFragmentationFunction::kJetsKineAcceptance);
-   else if(typeJets.Contains("KINE"))      task->SetJetTypeGen(AliAnalysisTaskIDFragmentationFunction::kJetsKine);
-   else if(typeJets.Contains("AODb"))      task->SetJetTypeGen(AliAnalysisTaskIDFragmentationFunction::kJetsRecAcceptance);
-   else if(typeJets.Contains("AOD"))       task->SetJetTypeGen(AliAnalysisTaskIDFragmentationFunction::kJetsRec);
-   else if(typeJets.Contains("jetTypeUndef")) task->SetJetTypeGen(0); // undefined
-   else Printf("jetType %s not found", typeJets.Data());
-   
-   if(typeJets.Contains("AODMCb")) task->SetJetTypeRecEff(AliAnalysisTaskIDFragmentationFunction::kJetsGenAcceptance); // kJetsRecAcceptance
-   else if(typeJets.Contains("AODb")) task->SetJetTypeRecEff(AliAnalysisTaskIDFragmentationFunction::kJetsRecAcceptance); 
-   else task->SetJetTypeRecEff(0);
-
-   if(!filterMaskTracks) task->SetFilterMask(filterMask);
-   else task->SetFilterMask(filterMaskTracks);
-
-   task->SetEventSelectionMask(AliVEvent::kMB);
+   task->SetEventSelectionMask(AliVEvent::kMB | AliVEvent::kINT8 | AliVEvent::kINT7);
    task->SetEventClass(eventClass);
   
    // Set default parameters 
    // Cut selection 
-
-   if(PtTrackMin == 150)       task->SetTrackCuts();  // default : pt > 0.150 GeV, |eta|<0.9, full phi acc
-   else if(PtTrackMin == 1000) task->SetTrackCuts(1.0, -0.9, 0.9, 0., 2*TMath::Pi());
-   else if(PtTrackMin == 2000) task->SetTrackCuts(2.0, -0.9, 0.9, 0., 2*TMath::Pi());
-   else                        task->SetTrackCuts(0.001*PtTrackMin,-0.9, 0.9, 0., 2*TMath::Pi());
-
-
-   task->SetJetCuts();          // default: jet pt > 5 GeV, |eta|<0.5, full phi acc
    task->SetFFRadius(radius); 
-   task->SetFFBckgRadius();     // default: R = 0.7
-   task->SetQAMode();           // default: qaMode = 3
-   task->SetFFMode();           // default: ffMode = 1
-   task->SetIDFFMode(0);        // default: IDffMode = 0
-   task->SetEffMode(0);         // default: effMode = 1
-   task->SetHighPtThreshold();  // default: pt > 5 Gev
-
-   task->SetBckgMode(1);        // default: bgMode = 1 
-   task->SetBckgType();
-   task->SetBranchRecBackClusters(Form("clustersAOD_KT04_B0_Filter%05d_Cut00150_Skip00",filterMask));
+//    task->SetFFBckgRadius();     // default: R = 0.7
+//    task->SetQAMode();           // default: qaMode = 3
+//    task->SetFFMode();           // default: ffMode = 1
+//    task->SetIDFFMode(0);        // default: IDffMode = 0
+//    task->SetEffMode(0);         // default: effMode = 1
+//    task->SetHighPtThreshold();  // default: pt > 5 Gev
+// 
+//    task->SetBckgMode(1);        // default: bgMode = 1 
+//    task->SetBckgType();
+//    task->SetBranchRecBackClusters(Form("clustersAOD_KT04_B0_Filter%05d_Cut00150_Skip00",filterMask));
    
    task->SetOnlyLeadingJets(onlyConsiderLeadingJets); // default: kFALSE
    
    task->SetMCPtHardCut(MC_pThard_cut);
    
    // Define histo bins
-   task->SetFFHistoBins(23, 5, 120, 480, 0., 120.,70,  0., 7.,22,  0.,  1.1);
- 
-   task->SetQAJetHistoBins();
-   task->SetQATrackHistoBins();
+//    task->SetFFHistoBins(23, 5, 120, 480, 0., 120.,70,  0., 7.,22,  0.,  1.1);
+//  
+//    task->SetQAJetHistoBins();
+//    task->SetQATrackHistoBins();
 
-   if(FFMaxTrackPt>0) task->SetFFMaxTrackPt(FFMaxTrackPt);
-   if(FFMinNTracks>0) task->SetFFMinNTracks(FFMinNTracks);
+//    if(FFMaxTrackPt>0) task->SetFFMaxTrackPt(FFMaxTrackPt);
+//    if(FFMinNTracks>0) task->SetFFMinNTracks(FFMinNTracks);
 
    mgr->AddTask(task);
 
@@ -421,15 +329,14 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
      strList += Form("_TrackFilter%05d",filterMaskTracks);
      strDir  += Form("_TrackFilter%05d",filterMaskTracks);
    }
-
-
+   
    AliAnalysisDataContainer *coutput_FragFunc = mgr->CreateContainer(strList,TList::Class(),
                      AliAnalysisManager::kOutputContainer,
-                     strDir);
-
+                     strDir);   
+   
    mgr->ConnectInput  (task, 0, mgr->GetCommonInputContainer());
-   mgr->ConnectOutput (task, 0, mgr->GetCommonOutputContainer());// Comment to run locally
-   mgr->ConnectOutput (task, 1, coutput_FragFunc);
+   //mgr->ConnectOutput (task, 0, mgr->GetCommonOutputContainer());// Comment to run locally
+   mgr->ConnectOutput (task, 1, coutput_FragFunc);   
    
    postConfig(task, suffixPIDtaskJets1, suffixPIDtaskJets2, suffixPIDtaskInclusive1, suffixPIDtaskInclusive2);
    
