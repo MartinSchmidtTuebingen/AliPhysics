@@ -25,64 +25,52 @@ Typical parameters to run on 11a1* (MC_pp@7TeV):
 
 ***************************************************************************************************/
 
-void postConfig(AliAnalysisTaskIDFragmentationFunction* task, TString suffixPIDtaskJets1, TString suffixPIDtaskJets2,
-                TString suffixPIDtaskInclusive1, TString suffixPIDtaskInclusive2) {
+void postConfig(AliAnalysisTaskIDFragmentationFunction* task, TString namesOfInclusivePIDtasks, TString namesOfJetPIDtasks,
+                TString namesOfJetUEPIDtasks) {
+	
+	TObjArray* nameArrayInclusive = namesOfInclusivePIDtasks.Tokenize(";");
+	Int_t numInclusivePIDtasks = nameArrayInclusive->GetEntriesFast();
+	TString* namesOfInclusiveTasks = new TString[numInclusivePIDtasks];
+	for (Int_t i=0;i<numInclusivePIDtasks;i++) {
+		namesOfInclusiveTasks[i] = (((TObjString*)(nameArrayInclusive->At(i)))->GetString());
+	}
+	task->SetNamesOfInclusivePIDtasks(numInclusivePIDtasks, namesOfInclusiveTasks);  
 
-//   task->SetBckgType(AliAnalysisTaskIDFragmentationFunction::kBckgPerp2,
-//         AliAnalysisTaskIDFragmentationFunction::kBckgPerp,
-//           AliAnalysisTaskIDFragmentationFunction::kBckgPerp2Area,
-//             AliAnalysisTaskIDFragmentationFunction::kBckgOutAJStat,
-//             AliAnalysisTaskIDFragmentationFunction::kBckgOut2J);
-
-//   task->SetBranchRecBackClusters("");
-
-   // Define histo bins
-   //task->SetFFHistoBins(23, 5, 120, 480, 0., 120.,70,  0., 7., 52, 0.,  1.3);
-//    task->SetQATrackHistoBins(2400,0,120); // 50 MeV binning for comp to track dN/dpt prel. plot
-   
-   // JS on
-//    task->SetJSMode();
-   
-//    task->SetEffMode(0);
+	
+	TObjArray* nameArrayJets = namesOfJetPIDtasks.Tokenize(";");
+	Int_t numJetPIDtasks = nameArrayJets->GetEntriesFast();
+	TString* namesOfJetTasks = new TString[numJetPIDtasks];
+	for (Int_t i=0;i<numJetPIDtasks;i++) {
+		namesOfJetTasks[i] = (((TObjString*)(nameArrayJets->At(i)))->GetString());
+	}
+	task->SetNamesOfJetPIDtasks(numJetPIDtasks, namesOfJetTasks);  
+	
+	
+	TObjArray* nameArrayJetsUE = namesOfJetUEPIDtasks.Tokenize(";");
+	Int_t numJetUEPIDtasks = nameArrayJetsUE->GetEntriesFast();
+	TString* namesOfJetUETasks = new TString[numJetUEPIDtasks];
+	for (Int_t i=0;i<numJetUEPIDtasks;i++) {
+		namesOfJetUETasks[i] = (((TObjString*)(nameArrayJetsUE->At(i)))->GetString());
+	}
+	task->SetNamesOfJetUEPIDtasks(numJetUEPIDtasks, namesOfJetUETasks);  
   
-  // Set name of PID framework tasks
-   
-  // Invalid: Second suffix set, but first one not set -> No PID tasks set
-  const Int_t numJetPIDtasks = (suffixPIDtaskJets1 != "") * ((suffixPIDtaskJets1 != "") + (suffixPIDtaskJets2 != ""));
-  if (numJetPIDtasks > 0) {
-    TString namesJetPIDtasks[numJetPIDtasks];
-    namesJetPIDtasks[0] = suffixPIDtaskJets1;
-    if (numJetPIDtasks > 1)
-      namesJetPIDtasks[1] = suffixPIDtaskJets2;
-    task->SetNamesOfJetPIDtasks(numJetPIDtasks, namesJetPIDtasks);
-  }
-  else
-    task->SetNamesOfJetPIDtasks(numJetPIDtasks, 0x0);
-  
-  // Same for inclusive
-  const Int_t numInclusivePIDtasks = (suffixPIDtaskInclusive1 != "") *
-                                      ((suffixPIDtaskInclusive1 != "") + (suffixPIDtaskInclusive2 != ""));
-  if (numInclusivePIDtasks > 0) {
-    TString namesInclusivePIDtasks[numInclusivePIDtasks];
-    namesInclusivePIDtasks[0] = suffixPIDtaskInclusive1;
-    if (numInclusivePIDtasks > 1)
-      namesInclusivePIDtasks[1] = suffixPIDtaskInclusive2;
-    task->SetNamesOfInclusivePIDtasks(numInclusivePIDtasks, namesInclusivePIDtasks);
-  }
-  else
-    task->SetNamesOfInclusivePIDtasks(numInclusivePIDtasks, 0x0);
-  
+	
   printf("PID framework:\n");
   printf("Jet PID tasks: ");
   for (Int_t i = 0; i < numJetPIDtasks; i++)
     printf("%s ", task->GetNamesOfJetPIDtasks()[i].Data());
   printf("\n");
+  printf("Jet Underlying Event PID tasks: ");
+  for (Int_t i = 0; i < numJetUEPIDtasks; i++) {
+    printf("%s ", task->GetNamesOfJetUEPIDtasks()[i].Data());
+    cout << ";  Underlying event subtraction method: " << task->GetUEMethods()[i] << endl; 
+  }
+  printf("\n");  
   printf("Inclusive PID task: ");
-  for (Int_t i = 0; i < numInclusivePIDtasks; i++)
+  for (Int_t i = 0; i < numInclusivePIDtasks; i++) {
     printf("%s ", task->GetNamesOfInclusivePIDtasks()[i].Data());
-  printf("\n");
+  }
 }
-
 
 AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(UInt_t iFlag=1, UInt_t filterMask=32, Int_t eventClass=0){
         
@@ -208,11 +196,17 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
   Int_t FFMinNTracks = 0,
   UInt_t filterMaskTracks = 0,
   Bool_t onlyConsiderLeadingJets = kFALSE,
-  TString suffixPIDtaskJets1 = "",
-  TString suffixPIDtaskJets2 = "",
-  TString suffixPIDtaskInclusive1 = "",
-  TString suffixPIDtaskInclusive2 = "",
-  Float_t MC_pThard_cut = -1.)
+  Float_t MC_pThard_cut = -1.,
+	TString namesOfInclusivePIDtasks = "",
+	TString namesOfJetPIDtasks = "",
+	TString namesOfJetUEPIDtasks = "",
+	AliAnalysisTaskEmcal::BeamType iBeamType = AliAnalysisTaskEmcal::kpp,
+  Int_t nJetContainer = 1,
+	AliEmcalJet::JetAcceptanceType* jetAcceptanceRegion = 0x0,
+	AliJetContainer::EJetType_t* typeOfJet = 0x0,
+	TString correctionTaskFileName = "",
+	TString period = "lhc13c",
+	TString fastSimParamFile = "")
 {
    // Creates a fragmentation function task,
    // configures it and adds it to the analysis manager.
@@ -221,13 +215,82 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
    //*** Configuration Parameter **************************************************
    //******************************************************************************
 
-   // space for configuration parameter: histo bin, cuts, ...
-   // so far only default parameter used
+	// space for configuration parameter: histo bin, cuts, ...
+	// so far only default parameter used
 
-   Int_t debug = -1; // debug level, -1: not set here
+	Int_t debug = -1; // debug level, -1: not set here
+	UInt_t kPhysSel = AliVEvent::kMB | AliVEvent::kINT8 | AliVEvent::kINT7;
+	AliEmcalTrackSelection::ETrackFilterType_t trackFilterType = AliEmcalTrackSelection::kHybridTracks2011woNoRefit;
+	
+	Bool_t subtractBackgroundPt = kFALSE;
+	UInt_t kNumberExcludeJetsInBackground = 2;
+	
+	Double_t trackPtCut = PtTrackMin/1000.0;
+	Double_t ghostArea = 0.005;
+	Double_t clustPtCut = 0.5;
+	Double_t jetMinPt = 1.0;
+	Float_t kEtaMin = -0.9;
+	Float_t kEtaMax = 0.9;
+	
+	Int_t kMinMultiplicity = -1;
+	Int_t kMaxMultiplicity = -1;
+	
+	//Calculated parameters
+	Bool_t useJets = nJetContainer > 0;
+	
+	Bool_t bDoFullJets = kFALSE;
+	for (Int_t i=0;i<nJetContainer;i++) 
+		bDoFullJets = bDoFullJets || (typeOfJet[i] == AliJetContainer::kFullJet);
+	
+	Bool_t useFastSimulation = fastSimParamFile != "";
+	
+	Double_t absRadiusCut = TMath::Abs(radius);
+	
+	AliTrackContainer::SetDefTrackCutsPeriod(period);  
+	
+	//TODO: Make default jetAcceptanceRegion and typeOfJet
 
    //******************************************************************************
+	
+	Bool_t isMC = (AliAnalysisManager::GetAnalysisManager()->GetMCtruthEventHandler() != 0x0);
+	if (isMC) 
+		std::cout << "MCtruthEventHandler found" << std::endl;
+	
+	if (isMC) {
+	gROOT->LoadMacro("$ALICE_Physics/PWG/EMCAL/macros/AddTaskMCTrackSelector.C");
+	AddTaskMCTrackSelector("mcparticles", kFALSE, kFALSE, -1, kFALSE);   
+	}	
+  
+	//Create jet Finder
+	gROOT->LoadMacro("$ALICE_Physics/PWGJE/EMCALJetTasks/macros/AddTaskEmcalJet.C");
+	if (useJets) {
+		AliEmcalJetTask** jetFinderTask = new AliEmcalJetTask*[nJetContainer];
+			
+		if (bDoFullJets) {
+			AliEmcalCorrectionTask* correctionTask = AliEmcalCorrectionTask::AddTaskEmcalCorrectionTask();
+			correctionTask->SelectCollisionCandidates(kPhysSel);
+			correctionTask->SetUserConfigurationFilename(correctionTaskFileName.Data());
+			correctionTask->Initialize();
+		}
+		
+		for (Int_t i=0;i<nJetContainer;++i) {
+			Bool_t isChargedJet = (typeOfJet[i] == AliJetContainer::kChargedJet);
+			const char* particleName = "usedefault";
+			const char* clustName = isChargedJet ? "" : "usedefault";
+			Double_t clustCut = isChargedJet ? 0.0 : clustPtCut;
+			jetFinderTask[i] = AddTaskEmcalJet(particleName, clustName, AliJetContainer::antikt_algorithm, absRadiusCut, typeOfJet[i], trackPtCut, clustCut, ghostArea, AliJetContainer::pt_scheme, "Jet", jetMinPt, kFALSE, kFALSE);
+			jetFinderTask[i]->SelectCollisionCandidates(kPhysSel);
+			jetFinderTask[i]->SetForceBeamType(iBeamType);
+		}
 
+		AliEmcalJetTask* jetFinderTaskMC = 0x0;
+		if (isMC) {
+			AliEmcalJetTask* jetFinderTaskMC = AddTaskEmcalJet("mcparticles", "", AliJetContainer::antikt_algorithm, absRadiusCut, AliJetContainer::kChargedJet, trackPtCut, clustCut, ghostArea, AliJetContainer::pt_scheme, "Jet", jetMinPt, kFALSE, kFALSE );  
+			jetFinderTaskMC->SelectCollisionCandidates(kPhysSel);
+			jetFinderTaskMC->SetForceBeamType(iBeamType);    
+		}
+	}  
+	 
 
    
    // Get the pointer to the existing analysis manager via the static access method.
@@ -267,40 +330,165 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
         Form("Fragmentation_Function_%s_%s_%s_%s_filterMaskTracks%d", branchRecJets.Data(), branchGenJets.Data(), typeJets.Data(),
              typeTracks.Data(), filterMaskTracks));
    
-   if(debug>=0) task->SetDebugLevel(debug);
+   if (debug>=0) 
+		 task->SetDebugLevel(debug);
 
-   task->SetEventSelectionMask(AliVEvent::kMB | AliVEvent::kINT8 | AliVEvent::kINT7);
+   task->SetEventSelectionMask(kPhysSel);
    task->SetEventClass(eventClass);
-  
+	 
    // Set default parameters 
    // Cut selection 
    task->SetFFRadius(radius); 
-//    task->SetFFBckgRadius();     // default: R = 0.7
-//    task->SetQAMode();           // default: qaMode = 3
-//    task->SetFFMode();           // default: ffMode = 1
-//    task->SetIDFFMode(0);        // default: IDffMode = 0
-//    task->SetEffMode(0);         // default: effMode = 1
-//    task->SetHighPtThreshold();  // default: pt > 5 Gev
-// 
-//    task->SetBckgMode(1);        // default: bgMode = 1 
-//    task->SetBckgType();
-//    task->SetBranchRecBackClusters(Form("clustersAOD_KT04_B0_Filter%05d_Cut00150_Skip00",filterMask));
+	 task->SelectCollisionCandidates(kPhysSel);
    
    task->SetOnlyLeadingJets(onlyConsiderLeadingJets); // default: kFALSE
    
    task->SetMCPtHardCut(MC_pThard_cut);
+	//Set Centrality Estimator (V0M ist default, V0A should be used for pPb). NoCentrality doesn't store the centrality information
+	if (iBeamType != AliAnalysisTaskEmcal::kpA)
+		task->SetCentralityEstimator("V0M");
+	else
+		task->SetCentralityEstimator("V0A");
    
-   // Define histo bins
-//    task->SetFFHistoBins(23, 5, 120, 480, 0., 120.,70,  0., 7.,22,  0.,  1.1);
-//  
-//    task->SetQAJetHistoBins();
-//    task->SetQATrackHistoBins();
-
-//    if(FFMaxTrackPt>0) task->SetFFMaxTrackPt(FFMaxTrackPt);
-//    if(FFMinNTracks>0) task->SetFFMinNTracks(FFMinNTracks);
+   //TODO For PbPb: Search for Centrality estimator  
+  
+   task->SetUseFastSimulations(useFastSimulation);	
+	 SetEfficiencyFunctionsFastSimulation(task, fastSimParamFile);
+	 task->SetDoGroomedJets(bDoJetGrooming);
+	 task->SetStudyTransversalJetStructure(bStudyTransversalJetStructure);
+	 task->SetMinMaxMultiplicity(kMinMultiplicity,kMaxMultiplicity);
 
    mgr->AddTask(task);
+	 
+	 	 
+//   -------------------------------------------------------
+//   Init track and cluster EMCAL containers
+//   -------------------------------------------------------
+	 
+	//Setting up EMCAL jet framework
+	 
+	TString trackName;
+	TString clusName;
 
+	if (type == "ESD") {
+		trackName = "Tracks";
+		clusName = "CaloClusters";
+	}
+	else if (type == "AOD") {
+		trackName = "tracks";
+		clusName = "caloClusters";
+	}
+	else {
+		trackName = "";
+	} 
+		
+	task->SetVzRange(-10,10);
+	task->SetNeedEmcalGeom(bDoFullJets);
+	
+	//Add Track Container to jet Task
+
+	AliTrackContainer* trackCont = task->AddTrackContainer(trackName);
+	trackCont->SetEtaLimits(kEtaMin,kEtaMax);
+	trackCont->SetName("ReconstructedTracks");
+	task->SetNameTrackContainer("ReconstructedTracks");
+	
+	trackCont->SetParticlePtCut(trackPtCut);
+	trackCont->SetTrackFilterType(trackFilterType);
+	trackCont->SetAODFilterBits(filterMaskTracks);
+	
+	AliClusterContainer* clusCont = 0x0;
+	if (bDoFullJets) {
+		clusCont = task->AddClusterContainer(clusName);
+		clusCont->SetClusECut(clustPtCut);
+		clusCont->SetExoticCut(kTRUE);
+		clusCont->SetClusECut(0.);
+		clusCont->SetClusPtCut(0.);
+		clusCont->SetClusNonLinCorrEnergyCut(0.);
+		clusCont->SetClusHadCorrEnergyCut(clustPtCut);
+		clusCont->SetDefaultClusterEnergy(AliVCluster::kHadCorr); 
+	}
+	 
+	 AliJetContainer** jetContainer = new AliJetContainer*[nJetContainer];
+	
+	if (useJets) {
+		TString jetContainerNames[nJetContainer];
+		for (Int_t i=0;i<nJetContainer;++i) {
+			Bool_t isChargedJet = (typeOfJet[i] == AliJetContainer::kChargedJet);
+			jetContainer[i] = task->AddJetContainer(typeOfJet[i], AliJetContainer::antikt_algorithm, AliJetContainer::pt_scheme, absRadiusCut, jetAcceptanceRegion[i], trackCont, isChargedJet ? 0x0 : clusCont);
+			jetContainer[i]->SetMinPt(jetMinPt);
+//       jetContainer[i]->SetEtaLimits(kEtaMin, kEtaMax); //Normally not needed, handled by the *fid region
+			jetContainer[i]->SetPhiLimits(-10.0, 10.0);   //Full acceptance  
+			jetContainer[i]->PrintCuts();
+			jetContainerNames[i] = jetContainer[i]->GetName();
+		}
+		
+		task->SetNameJetContainer(jetContainerNames[0]);
+	}
+		
+	AliJetContainer* jetMCContainer = 0x0;
+		
+	AliTrackContainer* trackContainerEfficiency = 0x0;
+	
+	if (isMC) {
+		AliMCParticleContainer* mcPartCont = task->AddMCParticleContainer("mcparticles");
+		
+		mcPartCont->SetParticlePtCut(trackPtCut);
+		mcPartCont->SetParticleEtaLimits(kEtaMin,kEtaMax);
+		mcPartCont->SetParticlePhiLimits(-10.0,10.0);
+		mcPartCont->SetCharge(AliParticleContainer::kCharged);
+		task->SetNameMCParticleContainer(mcPartCont->GetName());  
+		
+		trackContainerEfficiency = task->AddTrackContainer(trackName);
+		trackContainerEfficiency->SetAODFilterBits(filterMaskTracks);
+		trackContainerEfficiency->SetFilterHybridTracks(kTRUE);
+		trackContainerEfficiency->SetParticlePtCut(0.0);
+		trackContainerEfficiency->SetParticleEtaLimits(-100.0,100.0);
+		trackContainerEfficiency->SetParticlePhiLimits(-10.0,10.0);
+		trackContainerEfficiency->SetName("ReconstructedTracksEfficiency");
+		task->SetNameTrackContainerEfficiency(trackContainerEfficiency->GetName());
+		
+		if (useJets) {
+			jetMCContainer = task->AddJetContainer(AliJetContainer::kChargedJet, AliJetContainer::antikt_algorithm, AliJetContainer::pt_scheme, absRadiusCut, AliJetContainer::kTPCfid, mcPartCont,0x0);
+			task->SetNameMCParticleJetContainer(jetMCContainer->GetName());
+			jetMCContainer->SetMinPt(jetMinPt);
+			jetMCContainer->SetEtaLimits(kEtaMin,kEtaMax);
+			jetMCContainer->SetPhiLimits(-10.0,10.0);
+		}
+	}
+		
+	// Background
+	if (subtractBackgroundPt && useJets && jetContainer[0]) {
+		if (iBeamType != AliAnalysisTaskEmcal::kpp) {
+			TString sRhoChName = "Rho";
+			TString sRhoFuName = "Rho_Scaled";
+
+			AliEmcalJetTask *pKtChJetTask = AddTaskEmcalJet("usedefault", "", AliJetContainer::kt_algorithm, absRadiusCut, AliJetContainer::kChargedJet, trackPtCut, 0, ghostArea, AliJetContainer::pt_scheme, "Jet", 1.0, kFALSE, kFALSE);
+			pKtChJetTask->SelectCollisionCandidates(kPhysSel);
+			
+			gROOT->LoadMacro("$ALICE_Physics/PWGJE/EMCALJetTasks/macros/AddTaskRhoNew.C");
+			
+			AliAnalysisTaskRho* pRhoTask = AddTaskRhoNew("usedefault", "usedefault", sRhoChName, 0.4);
+			pRhoTask->SetExcludeLeadJets(kNumberExcludeJetsInBackground);
+			pRhoTask->SelectCollisionCandidates(kPhysSel);
+
+//       if (bDoFullJets) {
+//         TString sFuncPath = "alien:///alice/cern.ch/user/s/saiola/LHC11h_ScaleFactorFunctions.root";
+//         TString sFuncName = "LHC11h_HadCorr20_ClustersV2";
+//         pRhoTask->LoadRhoFunction(sFuncPath, sFuncName);
+//       }
+			
+			for (Int_t i=0;i<nJetContainer;++i) {
+				jetContainer[i]->SetRhoName(sRhoChName);
+				jetContainer[i]->SetPercAreaCut(0.6);
+			}
+			if (jetMCContainer) {
+				jetMCContainer->SetRhoName(sRhoChName);
+				jetMCContainer->SetPercAreaCut(0.6);
+			}
+			
+		}
+	}
+		
    // Create ONLY the output containers for the data produced by the task.
    // Get and connect other common input/output containers via the manager as below
    //==============================================================================
@@ -338,8 +526,30 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
    //mgr->ConnectOutput (task, 0, mgr->GetCommonOutputContainer());// Comment to run locally
    mgr->ConnectOutput (task, 1, coutput_FragFunc);   
    
-   postConfig(task, suffixPIDtaskJets1, suffixPIDtaskJets2, suffixPIDtaskInclusive1, suffixPIDtaskInclusive2);
+   postConfig(task, namesOfInclusivePIDtasks, namesOfJetPIDtasks, namesOfJetUEPIDtasks);
    
    return task;
+}
+
+void SetEfficiencyFunctionsFastSimulation(AliAnalysisTaskIDFragmentationFunction *task = 0x0, TString fastSimParamFile = "", Double_t effFactor = 1.0, Double_t resFactor = 1.0, Int_t ffChange = 0) {
+  if (!task || !task->GetUseFastSimulations())
+    return;
+
+  TF1** effFunctions = new TF1*[2*AliPID::kSPECIES];
+  
+  //effFactor: Multiplied with the parametrized efficiency
+	//resFactor: Multiplied with the observed resolution
+  //ffChange: 0 for normal Fragmentation, 1 for low-Pt enhancement, 2 for low-Pt depletion
+  
+  const Double_t kObsResolution = 0.002;  //Only change if the observed resolution is changing (external study)
+  
+  PieceWisePoly::ReadFSParameters(fastSimParamFile.Data(), effFunctions);                                                        
+	
+  task->SetEfficiencyFunctions(effFunctions);
+  task->SetFastSimEffFactor(effFactor);
+  task->SetFastSimRes(kObsResolution);   
+  task->SetFastSimResFactor(resFactor);
+	task->SetFFChange(ffChange);
+  return;
 }
 
