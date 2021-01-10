@@ -8,10 +8,10 @@
 
 #include "AliPID.h"
 
-#include "PieceWisePoly.h"
+#include "AliPieceWisePoly.h"
 using namespace std;
 
-PieceWisePoly::PieceWisePoly(Int_t parts, Double_t* cutxvalues, Int_t* polys, Double_t xmin, Double_t xmax,  Double_t* params, Int_t smooth)
+AliPieceWisePoly::AliPieceWisePoly(Int_t parts, Double_t* cutxvalues, Int_t* polys, Double_t xmin, Double_t xmax,  Double_t* params, Int_t smooth)
   : doSmoothing(2)
   , nParts(parts)
   , cuts(0x0)
@@ -54,14 +54,14 @@ PieceWisePoly::PieceWisePoly(Int_t parts, Double_t* cutxvalues, Int_t* polys, Do
   SetParam(params);
 }
 
-PieceWisePoly::~PieceWisePoly() {
+AliPieceWisePoly::~AliPieceWisePoly() {
   delete cuts;
   cuts = 0x0;
   delete piecewisepolynom;
   piecewisepolynom = 0x0;
 }
 
-void PieceWisePoly::SetParam(Double_t* params) {
+void AliPieceWisePoly::SetParam(Double_t* params) {
   if (!params)
     return;
   
@@ -102,7 +102,7 @@ void PieceWisePoly::SetParam(Double_t* params) {
   return;
 }
 
-Double_t PieceWisePoly::SumUp(Double_t constant, Int_t start, Int_t end, Int_t derivative, Int_t startn) {
+Double_t AliPieceWisePoly::SumUp(Double_t constant, Int_t start, Int_t end, Int_t derivative, Int_t startn) {
   Double_t sum = 0.0;
   if (derivative == 1) {
     for (Int_t i=startn;i<=end-start;++i) {
@@ -125,7 +125,7 @@ Double_t PieceWisePoly::SumUp(Double_t constant, Int_t start, Int_t end, Int_t d
   return sum;
 }
 
-TF1* PieceWisePoly::GetPartFunction(Int_t i) {
+TF1* AliPieceWisePoly::GetPartFunction(Int_t i) {
   if (i>nParts)
     return 0x0;
   
@@ -143,12 +143,12 @@ TF1* PieceWisePoly::GetPartFunction(Int_t i) {
 }
 
 
-double PieceWisePoly::Eval (double x, double* p) {
+double AliPieceWisePoly::Eval (double x, double* p) {
   SetParam(p);
   return piecewisepolynom->Eval(x);
 }
 
-void PieceWisePoly::ReadFSParameters(TString parameterFile, TF1** effFunctions) {
+void AliPieceWisePoly::ReadFSParameters(TString parameterFile, TF1** effFunctions) {
   TFile* f = new TFile(parameterFile.Data(), "READ");
   for (Int_t species=0;species<AliPID::kSPECIES;++species) {
     for (Int_t charge=0;charge<=1;++charge) {     
@@ -171,7 +171,7 @@ void PieceWisePoly::ReadFSParameters(TString parameterFile, TF1** effFunctions) 
       }
       nparameters[nOfParts - 1] = (((TObjString*)(arrPar->At(2*nOfParts -1)))->GetString()).Atoi();
       
-      PieceWisePoly* pwp = new PieceWisePoly(nOfParts,cuts,nparameters,0,50,0x0,2);
+      AliPieceWisePoly* pwp = new AliPieceWisePoly(nOfParts,cuts,nparameters,0,50,0x0,2);
       TString nameFunction = TString::Format("fastSimulationFunction_%s_%s",AliPID::ParticleShortName(species),charge ? "pos" : "neg");
       TF1* func = new TF1(nameFunction.Data(),pwp,0,50,pwp->GetNOfParam());
       for (Int_t param=0;param<pwp->GetNOfParam();++param) {

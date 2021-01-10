@@ -1,9 +1,9 @@
 class TF1;
 
-class PieceWisePoly {
+class AliPieceWisePoly {
 public:
-  PieceWisePoly(Int_t parts, Double_t* cutxvalues, Int_t* polys, Double_t xmin = 0, Double_t xmax = 1, Double_t* params = 0x0, Int_t smooth = 2);
-  ~PieceWisePoly();
+  AliPieceWisePoly(Int_t parts, Double_t* cutxvalues, Int_t* polys, Double_t xmin = 0, Double_t xmax = 1, Double_t* params = 0x0, Int_t smooth = 2);
+  ~AliPieceWisePoly();
   double operator() (double* x, double* p = 0x0) {return Eval(x[0], p);};
   double Eval (double x, double* p = 0x0);
   void SetParam(Double_t* params);

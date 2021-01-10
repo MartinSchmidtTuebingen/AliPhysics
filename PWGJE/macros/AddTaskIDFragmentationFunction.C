@@ -72,109 +72,6 @@ void postConfig(AliAnalysisTaskIDFragmentationFunction* task, TString namesOfInc
   }
 }
 
-AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(UInt_t iFlag=1, UInt_t filterMask=32, Int_t eventClass=0){
-        
-        AliAnalysisTaskIDFragmentationFunction *ff=0;
-
-        // UA1 Jets
-        // only reconstructed (default)
-  if(iFlag&(1<<0)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "", "", "", filterMask, 0.4,0,1000., eventClass);
-        // charged MC tracks and jets
-  if(iFlag&(1<<1)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODMC", "AODMC2", filterMask, 0.4,0,1000., eventClass);
-        // charged MC tracks and jets with acceptance cuts
-  if(iFlag&(1<<2)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODMCb", "AODMC2b", filterMask, 0.4,0,1000., eventClass);
-        // kine tracks in acceptance, pythia jets in acceptance
-  if(iFlag&(1<<3)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "", "KINEb", "KINEb", filterMask, 0.4,0,1000., eventClass);
-        // reconstructed charged tracks after cuts, MC jets in acceptance 
-  if(iFlag&(1<<4)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsMC2b", "AODMCb", "AOD2b", filterMask, 0.4,0,1000., eventClass);
-  // reconstruction efficiency: pointing with rec jet axis into gen tracks 
-  if(iFlag&(1<<5)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODb", "AODMC2b", filterMask, 0.4,0,1000., eventClass);
-
-
-
-      // Jet background subtracted
-  // anti-kt, pt cut 1 GeV
-  if(iFlag&(1<<20)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,1000.,eventClass, "_Skip00");
-  // anti-kt, pt cut 2 GeV
-  if(iFlag&(1<<21)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,2000.,eventClass, "_Skip00");
-  // anti-kt, pt cut 150 MeV
-  if(iFlag&(1<<22)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.2,2,150.,eventClass, "_Skip00");
-
-  
-  // Jet background subtracted
-  if(iFlag&(1<<23)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,150.,eventClass, "_Skip00");
-        // charged MC tracks and jets
-  if(iFlag&(1<<24)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "jetsAODMC2_FASTJET", "AODMC", "AODMC2", filterMask, 0.4,2,150.,eventClass, "_Skip00");
-        // charged MC tracks and jets with acceptance cuts
-  if(iFlag&(1<<25)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "jetsAODMC2_FASTJET", "AODMCb", "AODMC2b", filterMask, 0.4,2,150., eventClass, "_Skip00");
-
-       if(iFlag&(1<<26)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,1,150.,eventClass, "_Skip00");
-
-       if(iFlag&(1<<27)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,3,150.,eventClass, "_Skip00"); 
-
-      // SISCONE 
-      if(iFlag&(1<<28)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,1,150.,eventClass);
-      if(iFlag&(1<<29)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,2,150.,eventClass);
-      if(iFlag&(1<<30)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,3,150.,eventClass);
-
-  return ff;
-}
-
-// _______________________________________________________________________________________
-
-AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunctionAllCent(
-        const char* recJetsBranch,
-  const char* recJetsBackBranch,
-  const char* genJetsBranch,
-  const char* jetType,
-  const char* trackType,
-  UInt_t filterMask,
-        Float_t radius,
-        int kBackgroundMode,
-        Int_t PtTrackMin,
-        TString BrOpt="",
-        TString BrOpt2="",
-        TString BrOpt3="",
-        Float_t radiusBckg=0.4,
-  Int_t   FFMaxTrackPt = -1,
-  Float_t FFMinNTracks = 0,
-  TString suffixPIDtaskJets1 = "",
-  TString suffixPIDtaskJets2 = "",
-  TString suffixPIDtaskInclusive1 = "",
-  TString suffixPIDtaskInclusive2 = "")
-{
-
-  // adds task with  given configuration for all centralities
-  
-  AliAnalysisTaskIDFragmentationFunction *ff=0;
-
-  for(Int_t eventClass=1; eventClass<=4; eventClass++){
-    
-    ff = AddTaskIDFragmentationFunction(recJetsBranch,
-              recJetsBackBranch,
-              genJetsBranch,
-              jetType,
-              trackType,
-              filterMask,
-              radius,
-              kBackgroundMode,
-              PtTrackMin,
-              eventClass,
-              BrOpt,
-              BrOpt2,
-              BrOpt3,
-              radiusBckg
-              FFMaxTrackPt,
-              FFMinNTracks,
-              suffixPIDtaskJets1,
-              suffixPIDtaskJets2,
-              suffixPIDtaskInclusive1,
-              suffixPIDtaskInclusive2);
-  }
-  
-  return ff;
-}
-
 // _______________________________________________________________________________________
 
 AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
@@ -543,7 +440,7 @@ void SetEfficiencyFunctionsFastSimulation(AliAnalysisTaskIDFragmentationFunction
   
   const Double_t kObsResolution = 0.002;  //Only change if the observed resolution is changing (external study)
   
-  PieceWisePoly::ReadFSParameters(fastSimParamFile.Data(), effFunctions);                                                        
+  AliPieceWisePoly::ReadFSParameters(fastSimParamFile.Data(), effFunctions);                                                        
 	
   task->SetEfficiencyFunctions(effFunctions);
   task->SetFastSimEffFactor(effFactor);
@@ -551,5 +448,111 @@ void SetEfficiencyFunctionsFastSimulation(AliAnalysisTaskIDFragmentationFunction
   task->SetFastSimResFactor(resFactor);
 	task->SetFFChange(ffChange);
   return;
+}
+
+
+
+//Old adding functions
+AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(UInt_t iFlag=1, UInt_t filterMask=32, Int_t eventClass=0){
+        
+        AliAnalysisTaskIDFragmentationFunction *ff=0;
+
+        // UA1 Jets
+        // only reconstructed (default)
+  if(iFlag&(1<<0)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "", "", "", filterMask, 0.4,0,1000., eventClass);
+        // charged MC tracks and jets
+  if(iFlag&(1<<1)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODMC", "AODMC2", filterMask, 0.4,0,1000., eventClass);
+        // charged MC tracks and jets with acceptance cuts
+  if(iFlag&(1<<2)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODMCb", "AODMC2b", filterMask, 0.4,0,1000., eventClass);
+        // kine tracks in acceptance, pythia jets in acceptance
+  if(iFlag&(1<<3)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "", "KINEb", "KINEb", filterMask, 0.4,0,1000., eventClass);
+        // reconstructed charged tracks after cuts, MC jets in acceptance 
+  if(iFlag&(1<<4)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsMC2b", "AODMCb", "AOD2b", filterMask, 0.4,0,1000., eventClass);
+  // reconstruction efficiency: pointing with rec jet axis into gen tracks 
+  if(iFlag&(1<<5)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODb", "AODMC2b", filterMask, 0.4,0,1000., eventClass);
+
+
+
+      // Jet background subtracted
+  // anti-kt, pt cut 1 GeV
+  if(iFlag&(1<<20)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,1000.,eventClass, "_Skip00");
+  // anti-kt, pt cut 2 GeV
+  if(iFlag&(1<<21)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,2000.,eventClass, "_Skip00");
+  // anti-kt, pt cut 150 MeV
+  if(iFlag&(1<<22)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.2,2,150.,eventClass, "_Skip00");
+
+  
+  // Jet background subtracted
+  if(iFlag&(1<<23)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,150.,eventClass, "_Skip00");
+        // charged MC tracks and jets
+  if(iFlag&(1<<24)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "jetsAODMC2_FASTJET", "AODMC", "AODMC2", filterMask, 0.4,2,150.,eventClass, "_Skip00");
+        // charged MC tracks and jets with acceptance cuts
+  if(iFlag&(1<<25)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "jetsAODMC2_FASTJET", "AODMCb", "AODMC2b", filterMask, 0.4,2,150., eventClass, "_Skip00");
+
+       if(iFlag&(1<<26)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,1,150.,eventClass, "_Skip00");
+
+       if(iFlag&(1<<27)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,3,150.,eventClass, "_Skip00"); 
+
+      // SISCONE 
+      if(iFlag&(1<<28)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,1,150.,eventClass);
+      if(iFlag&(1<<29)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,2,150.,eventClass);
+      if(iFlag&(1<<30)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,3,150.,eventClass);
+
+  return ff;
+}
+
+// _______________________________________________________________________________________
+
+AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunctionAllCent(
+        const char* recJetsBranch,
+  const char* recJetsBackBranch,
+  const char* genJetsBranch,
+  const char* jetType,
+  const char* trackType,
+  UInt_t filterMask,
+        Float_t radius,
+        int kBackgroundMode,
+        Int_t PtTrackMin,
+        TString BrOpt="",
+        TString BrOpt2="",
+        TString BrOpt3="",
+        Float_t radiusBckg=0.4,
+  Int_t   FFMaxTrackPt = -1,
+  Float_t FFMinNTracks = 0,
+  TString suffixPIDtaskJets1 = "",
+  TString suffixPIDtaskJets2 = "",
+  TString suffixPIDtaskInclusive1 = "",
+  TString suffixPIDtaskInclusive2 = "")
+{
+
+  // adds task with  given configuration for all centralities
+  
+  AliAnalysisTaskIDFragmentationFunction *ff=0;
+
+  for(Int_t eventClass=1; eventClass<=4; eventClass++){
+    
+    ff = AddTaskIDFragmentationFunction(recJetsBranch,
+              recJetsBackBranch,
+              genJetsBranch,
+              jetType,
+              trackType,
+              filterMask,
+              radius,
+              kBackgroundMode,
+              PtTrackMin,
+              eventClass,
+              BrOpt,
+              BrOpt2,
+              BrOpt3,
+              radiusBckg
+              FFMaxTrackPt,
+              FFMinNTracks,
+              suffixPIDtaskJets1,
+              suffixPIDtaskJets2,
+              suffixPIDtaskInclusive1,
+              suffixPIDtaskInclusive2);
+  }
+  
+  return ff;
 }
 

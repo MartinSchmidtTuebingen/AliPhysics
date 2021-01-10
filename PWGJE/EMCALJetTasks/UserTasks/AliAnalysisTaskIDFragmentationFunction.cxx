@@ -64,7 +64,7 @@
 
 #include "AliESDtrackCuts.h"
 
-#include "PieceWisePoly.h"
+#include "AliPieceWisePoly.h"
 #include "AliHelperClassFastSimulation.h"
 
 #include "AliAnalysisTaskIDFragmentationFunction.h"
@@ -648,7 +648,7 @@ void AliAnalysisTaskIDFragmentationFunction::Init()
     const Int_t parts_e = 4;
     Double_t cuts_e[parts_e-1] = {0.6,3.2,8.0};
     Int_t nparameters_e[parts_e] = {7,5,3,2};
-    PieceWisePoly* pwp_e = new PieceWisePoly(parts_e,cuts_e,nparameters_e,0,50,0x0,2);
+    AliPieceWisePoly* pwp_e = new AliPieceWisePoly(parts_e,cuts_e,nparameters_e,0,50,0x0,2);
     TF1* func_e = new TF1("func_e",pwp_e,0,50,pwp_e->GetNOfParam());
     Double_t parameters_e[11] = {-1.22427e+00, 2.25003e+01, -9.00154e+01, 1.42536e+02, 1.98605e+00, -2.33708e+02, 1.74505e+02, -4.40750e-01, 1.43504e-01, -1.59226e-02, -6.14939e-04};
     func_e->SetParameters(parameters_e);
@@ -658,7 +658,7 @@ void AliAnalysisTaskIDFragmentationFunction::Init()
     const Int_t parts_p = 6;
     Double_t cuts_p[parts_p-1] = {0.4,1.6,2.5,8.0,12.0};
     Int_t nparameters_p[parts_p] = {5,4,4,2,5,2};
-    PieceWisePoly* pwp_p = new PieceWisePoly(parts_p,cuts_p,nparameters_p,0,50,0x0,2);
+    AliPieceWisePoly* pwp_p = new AliPieceWisePoly(parts_p,cuts_p,nparameters_p,0,50,0x0,2);
     TF1* func_p = new TF1("func_p",pwp_p,0,50,pwp_p->GetNOfParam());
     Double_t parameters_p[12] = {-1.04124e+01, 1.72024e+02, -1.02722e+03, 2.61164e+03, -2.35742e+03, -6.20212e-01, 1.47330e-01, 8.64180e-02, -5.27106e-03, -1.91588e-01, 1.21507e-02, -2.85315e-04};
     func_p->SetParameters(parameters_p);  
@@ -668,7 +668,7 @@ void AliAnalysisTaskIDFragmentationFunction::Init()
     const Int_t parts_k = 5;
     Double_t cuts_k[parts_k-1] = {0.4,1.2,6,15};
     Int_t nparameters_k[parts_k] = {3,3,5,4,2};  
-    PieceWisePoly* pwp_k = new PieceWisePoly(parts_k,cuts_k,nparameters_k,0,50,0x0,2);
+    AliPieceWisePoly* pwp_k = new AliPieceWisePoly(parts_k,cuts_k,nparameters_k,0,50,0x0,2);
     TF1* func_k = new TF1("func_k",pwp_k,0,50,pwp_k->GetNOfParam());
     Double_t parameters_k[9] = {-7.18856e-01, 5.10339e+00, -5.44263e+00, -4.80959e-01, 9.57122e-02, -1.80916e-02, 1.15958e-03, -6.17673e-03, 1.66119e-04};
     func_k->SetParameters(parameters_k);   
@@ -678,7 +678,7 @@ void AliAnalysisTaskIDFragmentationFunction::Init()
     const Int_t parts_pi = 6;
     Double_t cuts_pi[parts_pi-1] = {0.8,1.6,3.0,10.0,12.0};
     Int_t nparameters_pi[parts_pi] = {9,4,4,3,3,2};   
-    PieceWisePoly* pwp_pi = new PieceWisePoly(parts_pi,cuts_pi,nparameters_pi,0,50,0x0,2);
+    AliPieceWisePoly* pwp_pi = new AliPieceWisePoly(parts_pi,cuts_pi,nparameters_pi,0,50,0x0,2);
     TF1* func_pi = new TF1("func_pi",pwp_pi,0,50,pwp_pi->GetNOfParam());
     Double_t parameters_pi[15] = {-1.87482e-01, 8.99878e+00, -3.34776e+01, 5.73258e+01, -2.41936e+01, -4.02440e+01, 1.61212e+01, 5.09543e+01, -3.49975e+01, 7.70485e-02, -4.42996e-02, 3.16051e-01, -3.93133e-02, -5.79754e-04, 1.34446e-04};
     func_pi->SetParameters(parameters_pi);   
@@ -1713,6 +1713,7 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
         Bool_t trackRejectedByTask[arrSizeJet];
         Bool_t trackRejectedByAllTasks = kFALSE;
         if (track) {
+          std::cout << track->Eta() << " " << track->Pt() << std::endl;
           Bool_t survivedTPCCutMIGeo = AliAnalysisTaskPID::TPCCutMIGeo(track, InputEvent());
           Bool_t survivedTPCnclCut = AliAnalysisTaskPID::TPCnclCut(track);    //Included above
           Double_t dEdxTPC = tuneOnDataTPC ? pidResponse->GetTPCsignalTunedOnData(track) : track->GetTPCsignal();

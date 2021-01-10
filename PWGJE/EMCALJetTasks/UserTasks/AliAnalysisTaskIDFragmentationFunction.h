@@ -25,14 +25,14 @@ class TArrayS;
 class AliAnalysisUtils;
 class AliAODTrack;
 class AliAODMCParticle;
-class AliMCParticleContainer;
-class AliAnalysisTaskPID;
+class AliMCParticleContainer;;
 class AliFJWrapper;
 
 #include <fastjet/PseudoJet.hh>
 
 #include "AliAnalysisTaskEmcalJet.h"
 #include "AliPID.h"
+#include "AliAnalysisTaskPID.h"
   
 class AliAnalysisTaskIDFragmentationFunction : public AliAnalysisTaskEmcalJet {
 public:
@@ -191,7 +191,7 @@ public:
   void RemoveJetContainer(const char* n) {fJetCollArray.Remove(GetJetContainer(n));}
   
   void SetUpFastJetWrapperWithOriginalValues(AliFJWrapper* wrapper);
-	void FillEfficiencyContainerFromTrack(AliAODMCParticle* part, AliEmcalJet* jet, Double_t centPercent, AliAnalysisTaskPID::EffSteps step);
+  void FillEfficiencyContainerFromTrack(AliAODMCParticle* part, AliEmcalJet* jet, Double_t centPercent, AliAnalysisTaskPID::EffSteps step);
 	
  protected:
 
@@ -313,7 +313,7 @@ public:
   TString* fUEMethods;                      //[fNumJetUEPIDtasks] Names for the underlying event methods
   Bool_t fUseRealJetArea;
 	
-	AliFJWrapper* 				fWrapper;
+  AliFJWrapper* 				fWrapper;
   
 private:
   AliAnalysisTaskIDFragmentationFunction(const  AliAnalysisTaskIDFragmentationFunction&);   //Not implemented in AliAnalysisTaskEmcalJet
