@@ -1,3 +1,8 @@
+R__ADD_INCLUDE_PATH($ALICE_PHYSICS);
+#include <PWG/EMCAL/macros/AddTaskMCTrackSelector.C>
+#include <PWGJE/EMCALJetTasks/macros/AddTaskEmcalJet.C>
+#include <PWGJE/EMCALJetTasks/macros/AddTaskRhoNew.C>
+
 /*************************************************************************************************
 ***  Add Fragmentation Function Task ***
 **************************************************************************************************
@@ -25,8 +30,30 @@ Typical parameters to run on 11a1* (MC_pp@7TeV):
 
 ***************************************************************************************************/
 
+void SetEfficiencyFunctionsFastSimulation(AliAnalysisTaskIDFragmentationFunction *task = 0x0, TString fastSimParamFile = "", Double_t effFactor = 1.0, Double_t resFactor = 1.0, Int_t ffChange = 0) {
+  if (!task || !task->GetUseFastSimulations())
+    return;
+
+  TF1** effFunctions = new TF1*[2*AliPID::kSPECIES];
+  
+  //effFactor: Multiplied with the parametrized efficiency
+	//resFactor: Multiplied with the observed resolution
+  //ffChange: 0 for normal Fragmentation, 1 for low-Pt enhancement, 2 for low-Pt depletion
+  
+  const Double_t kObsResolution = 0.002;  //Only change if the observed resolution is changing (external study)
+  
+  AliPieceWisePoly::ReadFSParameters(fastSimParamFile.Data(), effFunctions);                                                        
+	
+  task->SetEfficiencyFunctions(effFunctions);
+  task->SetFastSimEffFactor(effFactor);
+  task->SetFastSimRes(kObsResolution);   
+  task->SetFastSimResFactor(resFactor);
+  task->SetFFChange(ffChange);
+  return;
+}
+
 void postConfig(AliAnalysisTaskIDFragmentationFunction* task, TString namesOfInclusivePIDtasks, TString namesOfJetPIDtasks,
-                TString namesOfJetUEPIDtasks) {
+                TString namesOfJetUEPIDtasks, TString namesOfJetUEMethods) {
 	
 	TObjArray* nameArrayInclusive = namesOfInclusivePIDtasks.Tokenize(";");
 	Int_t numInclusivePIDtasks = nameArrayInclusive->GetEntriesFast();
@@ -48,11 +75,15 @@ void postConfig(AliAnalysisTaskIDFragmentationFunction* task, TString namesOfInc
 	
 	TObjArray* nameArrayJetsUE = namesOfJetUEPIDtasks.Tokenize(";");
 	Int_t numJetUEPIDtasks = nameArrayJetsUE->GetEntriesFast();
+    TObjArray* nameArrayJetsUEMethods = namesOfJetUEMethods.Tokenize(";");
+    //TODO: Check if length is same for both, if not exit (or take shorter one with warning?)
 	TString* namesOfJetUETasks = new TString[numJetUEPIDtasks];
+    TString* namesOfJetUEMethodsArray = new TString[numJetUEPIDtasks];
 	for (Int_t i=0;i<numJetUEPIDtasks;i++) {
 		namesOfJetUETasks[i] = (((TObjString*)(nameArrayJetsUE->At(i)))->GetString());
+        namesOfJetUEMethodsArray[i] = (((TObjString*)(nameArrayJetsUEMethods->At(i)))->GetString());
 	}
-	task->SetNamesOfJetUEPIDtasks(numJetUEPIDtasks, namesOfJetUETasks);  
+	task->SetNamesOfJetUEPIDtasks(numJetUEPIDtasks, namesOfJetUETasks, namesOfJetUEMethodsArray);  
   
 	
   printf("PID framework:\n");
@@ -75,35 +106,30 @@ void postConfig(AliAnalysisTaskIDFragmentationFunction* task, TString namesOfInc
 // _______________________________________________________________________________________
 
 AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
-  const char* recJetsBranch,
-  const char* recJetsBackBranch,
-  const char* genJetsBranch,
-  const char* jetType,
-  const char* trackType,
-  UInt_t filterMask,
-  Float_t radius,
-  Int_t kBackgroundMode,
-  Int_t PtTrackMin,
+  const char* recJetsBranch = "clustersAOD_ANTIKT",
+  const char* recJetsBackBranch = "",
+  const char* genJetsBranch = "clustersAODMC2_ANTIKT",
+  const char* jetType = "AODMCb",
+  const char* trackType = "AODMC2b",
+  Float_t radius = -0.4,
+  Int_t PtTrackMin = 150.0,
   Int_t eventClass=0,
-  TString BrOpt="",
-  TString BrOpt2="",
-  TString BrOpt3="",
-  Float_t radiusBckg=0.4,
   Int_t FFMaxTrackPt = -1,
   Int_t FFMinNTracks = 0,
   UInt_t filterMaskTracks = 0,
   Bool_t onlyConsiderLeadingJets = kFALSE,
   Float_t MC_pThard_cut = -1.,
-	TString namesOfInclusivePIDtasks = "",
-	TString namesOfJetPIDtasks = "",
-	TString namesOfJetUEPIDtasks = "",
-	AliAnalysisTaskEmcal::BeamType iBeamType = AliAnalysisTaskEmcal::kpp,
+  TString namesOfInclusivePIDtasks = "",
+  TString namesOfJetPIDtasks = "",
+  TString namesOfJetUEPIDtasks = "",
+  TString namesOfJetUEMethods = "",
+  AliAnalysisTaskEmcal::BeamType iBeamType = AliAnalysisTaskEmcal::kpp,
   Int_t nJetContainer = 1,
-	AliEmcalJet::JetAcceptanceType* jetAcceptanceRegion = 0x0,
-	AliJetContainer::EJetType_t* typeOfJet = 0x0,
-	TString correctionTaskFileName = "",
-	TString period = "lhc13c",
-	TString fastSimParamFile = "")
+  AliEmcalJet::JetAcceptanceType* jetAcceptanceRegion = 0x0,
+  AliJetContainer::EJetType_t* typeOfJet = 0x0,
+  TString correctionTaskFileName = "",
+  TString period = "lhc13c",
+  TString fastSimParamFile = "")
 {
    // Creates a fragmentation function task,
    // configures it and adds it to the analysis manager.
@@ -150,16 +176,15 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
    //******************************************************************************
 	
 	Bool_t isMC = (AliAnalysisManager::GetAnalysisManager()->GetMCtruthEventHandler() != 0x0);
+    isMC = kFALSE;
 	if (isMC) 
 		std::cout << "MCtruthEventHandler found" << std::endl;
 	
 	if (isMC) {
-	gROOT->LoadMacro("$ALICE_Physics/PWG/EMCAL/macros/AddTaskMCTrackSelector.C");
-	AddTaskMCTrackSelector("mcparticles", kFALSE, kFALSE, -1, kFALSE);   
+        AddTaskMCTrackSelector("mcparticles", kFALSE, kFALSE, -1, kFALSE);   
 	}	
   
 	//Create jet Finder
-	gROOT->LoadMacro("$ALICE_Physics/PWGJE/EMCALJetTasks/macros/AddTaskEmcalJet.C");
 	if (useJets) {
 		AliEmcalJetTask** jetFinderTask = new AliEmcalJetTask*[nJetContainer];
 			
@@ -182,7 +207,7 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
 
 		AliEmcalJetTask* jetFinderTaskMC = 0x0;
 		if (isMC) {
-			AliEmcalJetTask* jetFinderTaskMC = AddTaskEmcalJet("mcparticles", "", AliJetContainer::antikt_algorithm, absRadiusCut, AliJetContainer::kChargedJet, trackPtCut, clustCut, ghostArea, AliJetContainer::pt_scheme, "Jet", jetMinPt, kFALSE, kFALSE );  
+			AliEmcalJetTask* jetFinderTaskMC = AddTaskEmcalJet("mcparticles", "", AliJetContainer::antikt_algorithm, absRadiusCut, AliJetContainer::kChargedJet, trackPtCut, clustPtCut, ghostArea, AliJetContainer::pt_scheme, "Jet", jetMinPt, kFALSE, kFALSE );  
 			jetFinderTaskMC->SelectCollisionCandidates(kPhysSel);
 			jetFinderTaskMC->SetForceBeamType(iBeamType);    
 		}
@@ -250,10 +275,10 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
    //TODO For PbPb: Search for Centrality estimator  
   
    task->SetUseFastSimulations(useFastSimulation);	
-	 SetEfficiencyFunctionsFastSimulation(task, fastSimParamFile);
-	 task->SetDoGroomedJets(bDoJetGrooming);
-	 task->SetStudyTransversalJetStructure(bStudyTransversalJetStructure);
-	 task->SetMinMaxMultiplicity(kMinMultiplicity,kMaxMultiplicity);
+   SetEfficiencyFunctionsFastSimulation(task, fastSimParamFile);
+// 	 task->SetDoGroomedJets(bDoJetGrooming);
+// 	 task->SetStudyTransversalJetStructure(bStudyTransversalJetStructure);
+// 	 task->SetMinMaxMultiplicity(kMinMultiplicity,kMaxMultiplicity);
 
    mgr->AddTask(task);
 	 
@@ -362,8 +387,6 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
 			AliEmcalJetTask *pKtChJetTask = AddTaskEmcalJet("usedefault", "", AliJetContainer::kt_algorithm, absRadiusCut, AliJetContainer::kChargedJet, trackPtCut, 0, ghostArea, AliJetContainer::pt_scheme, "Jet", 1.0, kFALSE, kFALSE);
 			pKtChJetTask->SelectCollisionCandidates(kPhysSel);
 			
-			gROOT->LoadMacro("$ALICE_Physics/PWGJE/EMCALJetTasks/macros/AddTaskRhoNew.C");
-			
 			AliAnalysisTaskRho* pRhoTask = AddTaskRhoNew("usedefault", "usedefault", sRhoChName, 0.4);
 			pRhoTask->SetExcludeLeadJets(kNumberExcludeJetsInBackground);
 			pRhoTask->SelectCollisionCandidates(kPhysSel);
@@ -423,136 +446,8 @@ AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(
    //mgr->ConnectOutput (task, 0, mgr->GetCommonOutputContainer());// Comment to run locally
    mgr->ConnectOutput (task, 1, coutput_FragFunc);   
    
-   postConfig(task, namesOfInclusivePIDtasks, namesOfJetPIDtasks, namesOfJetUEPIDtasks);
+   postConfig(task, namesOfInclusivePIDtasks, namesOfJetPIDtasks, namesOfJetUEPIDtasks, namesOfJetUEMethods);
    
    return task;
-}
-
-void SetEfficiencyFunctionsFastSimulation(AliAnalysisTaskIDFragmentationFunction *task = 0x0, TString fastSimParamFile = "", Double_t effFactor = 1.0, Double_t resFactor = 1.0, Int_t ffChange = 0) {
-  if (!task || !task->GetUseFastSimulations())
-    return;
-
-  TF1** effFunctions = new TF1*[2*AliPID::kSPECIES];
-  
-  //effFactor: Multiplied with the parametrized efficiency
-	//resFactor: Multiplied with the observed resolution
-  //ffChange: 0 for normal Fragmentation, 1 for low-Pt enhancement, 2 for low-Pt depletion
-  
-  const Double_t kObsResolution = 0.002;  //Only change if the observed resolution is changing (external study)
-  
-  AliPieceWisePoly::ReadFSParameters(fastSimParamFile.Data(), effFunctions);                                                        
-	
-  task->SetEfficiencyFunctions(effFunctions);
-  task->SetFastSimEffFactor(effFactor);
-  task->SetFastSimRes(kObsResolution);   
-  task->SetFastSimResFactor(resFactor);
-	task->SetFFChange(ffChange);
-  return;
-}
-
-
-
-//Old adding functions
-AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunction(UInt_t iFlag=1, UInt_t filterMask=32, Int_t eventClass=0){
-        
-        AliAnalysisTaskIDFragmentationFunction *ff=0;
-
-        // UA1 Jets
-        // only reconstructed (default)
-  if(iFlag&(1<<0)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "", "", "", filterMask, 0.4,0,1000., eventClass);
-        // charged MC tracks and jets
-  if(iFlag&(1<<1)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODMC", "AODMC2", filterMask, 0.4,0,1000., eventClass);
-        // charged MC tracks and jets with acceptance cuts
-  if(iFlag&(1<<2)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODMCb", "AODMC2b", filterMask, 0.4,0,1000., eventClass);
-        // kine tracks in acceptance, pythia jets in acceptance
-  if(iFlag&(1<<3)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "", "KINEb", "KINEb", filterMask, 0.4,0,1000., eventClass);
-        // reconstructed charged tracks after cuts, MC jets in acceptance 
-  if(iFlag&(1<<4)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsMC2b", "AODMCb", "AOD2b", filterMask, 0.4,0,1000., eventClass);
-  // reconstruction efficiency: pointing with rec jet axis into gen tracks 
-  if(iFlag&(1<<5)) ff = AddTaskIDFragmentationFunction("jetsAOD_UA1", "", "jetsAODMC2_UA1", "AODb", "AODMC2b", filterMask, 0.4,0,1000., eventClass);
-
-
-
-      // Jet background subtracted
-  // anti-kt, pt cut 1 GeV
-  if(iFlag&(1<<20)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,1000.,eventClass, "_Skip00");
-  // anti-kt, pt cut 2 GeV
-  if(iFlag&(1<<21)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,2000.,eventClass, "_Skip00");
-  // anti-kt, pt cut 150 MeV
-  if(iFlag&(1<<22)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.2,2,150.,eventClass, "_Skip00");
-
-  
-  // Jet background subtracted
-  if(iFlag&(1<<23)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,2,150.,eventClass, "_Skip00");
-        // charged MC tracks and jets
-  if(iFlag&(1<<24)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "jetsAODMC2_FASTJET", "AODMC", "AODMC2", filterMask, 0.4,2,150.,eventClass, "_Skip00");
-        // charged MC tracks and jets with acceptance cuts
-  if(iFlag&(1<<25)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "jetsAODMC2_FASTJET", "AODMCb", "AODMC2b", filterMask, 0.4,2,150., eventClass, "_Skip00");
-
-       if(iFlag&(1<<26)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,1,150.,eventClass, "_Skip00");
-
-       if(iFlag&(1<<27)) ff = AddTaskIDFragmentationFunction("clustersAOD_ANTIKT", "", "", "", "", filterMask, 0.4,3,150.,eventClass, "_Skip00"); 
-
-      // SISCONE 
-      if(iFlag&(1<<28)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,1,150.,eventClass);
-      if(iFlag&(1<<29)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,2,150.,eventClass);
-      if(iFlag&(1<<30)) ff = AddTaskIDFragmentationFunction("jetsAOD_SISCONE", "", "", "", "", filterMask, 0.4,3,150.,eventClass);
-
-  return ff;
-}
-
-// _______________________________________________________________________________________
-
-AliAnalysisTaskIDFragmentationFunction *AddTaskIDFragmentationFunctionAllCent(
-        const char* recJetsBranch,
-  const char* recJetsBackBranch,
-  const char* genJetsBranch,
-  const char* jetType,
-  const char* trackType,
-  UInt_t filterMask,
-        Float_t radius,
-        int kBackgroundMode,
-        Int_t PtTrackMin,
-        TString BrOpt="",
-        TString BrOpt2="",
-        TString BrOpt3="",
-        Float_t radiusBckg=0.4,
-  Int_t   FFMaxTrackPt = -1,
-  Float_t FFMinNTracks = 0,
-  TString suffixPIDtaskJets1 = "",
-  TString suffixPIDtaskJets2 = "",
-  TString suffixPIDtaskInclusive1 = "",
-  TString suffixPIDtaskInclusive2 = "")
-{
-
-  // adds task with  given configuration for all centralities
-  
-  AliAnalysisTaskIDFragmentationFunction *ff=0;
-
-  for(Int_t eventClass=1; eventClass<=4; eventClass++){
-    
-    ff = AddTaskIDFragmentationFunction(recJetsBranch,
-              recJetsBackBranch,
-              genJetsBranch,
-              jetType,
-              trackType,
-              filterMask,
-              radius,
-              kBackgroundMode,
-              PtTrackMin,
-              eventClass,
-              BrOpt,
-              BrOpt2,
-              BrOpt3,
-              radiusBckg
-              FFMaxTrackPt,
-              FFMinNTracks,
-              suffixPIDtaskJets1,
-              suffixPIDtaskJets2,
-              suffixPIDtaskInclusive1,
-              suffixPIDtaskInclusive2);
-  }
-  
-  return ff;
 }
 

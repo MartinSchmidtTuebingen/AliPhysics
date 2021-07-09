@@ -1713,7 +1713,6 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
         Bool_t trackRejectedByTask[arrSizeJet];
         Bool_t trackRejectedByAllTasks = kFALSE;
         if (track) {
-          std::cout << track->Eta() << " " << track->Pt() << std::endl;
           Bool_t survivedTPCCutMIGeo = AliAnalysisTaskPID::TPCCutMIGeo(track, InputEvent());
           Bool_t survivedTPCnclCut = AliAnalysisTaskPID::TPCnclCut(track);    //Included above
           Double_t dEdxTPC = tuneOnDataTPC ? pidResponse->GetTPCsignalTunedOnData(track) : track->GetTPCsignal();
