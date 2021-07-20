@@ -33,6 +33,7 @@
 #include <TCustomBinning.h>
 #include <TLinearBinning.h>
 #include <TCustomBinning.h>
+#include <TPDGCode.h>
 #include <TRandom.h>
 
 #include "AliAODInputHandler.h"
@@ -212,6 +213,9 @@ void AliAnalysisTaskEmcalJetEnergyScale::UserCreateOutputObjects(){
   fHistos->CreateTH2("hQAClusterM02VsE", "Cluster M02 vs energy; M02; E (GeV)", 150, 0., 1.5, 200, 0., 200.);
   fHistos->CreateTH2("hQAClusterFracLeadingVsE", "Cluster frac leading cell vs energy; E (GeV); Frac. leading cell", 200, 0., 200., 110, 0., 1.1);
   fHistos->CreateTH2("hQAClusterFracLeadingVsNcell", "Cluster frac leading cell vs number of cells; Number of cells; Frac. leading cell", 201, -0.5, 200.5, 110, 0., 1.1);
+  fHistos->CreateTH1("hPartConstPi0", "Particle-level consitutent spectrum of pi0 constituents", 200, 0., 200.);
+  fHistos->CreateTH1("hPartConstK0s", "Particle-level consitutent spectrum of K0 constituents", 200, 0., 200.);
+  fHistos->CreateTH1("hPartConstPhoton", "Particle-level consitutent spectrum of photon constituents", 200, 0., 200.);
   fHistos->CreateTH1("hFracPtHardPart", "Part. level jet Pt relative to the Pt-hard of the event", 100, 0., 10.);
   fHistos->CreateTH1("hFracPtHardDet", "Det. level jet Pt relative to the Pt-hard of the event", 100, 0., 10.);
   if(fDebugMaxJetOutliers) {
@@ -354,7 +358,7 @@ Bool_t AliAnalysisTaskEmcalJetEnergyScale::Run(){
     // Fill histograms for JES debugging
     int ptbminI = -1,
         ptbmaxI = -1;
-    for(int iptbin = 0; iptbin < ptbinsDebug.size() - 1; iptbin++){
+    for(std::size_t iptbin = 0; iptbin < ptbinsDebug.size() - 1; iptbin++){
       if(partjet->Pt() >= ptbinsDebug[iptbin] && partjet->Pt() < ptbinsDebug[iptbin+1]) {
         ptbminI = ptbinsDebug[iptbin];
         ptbmaxI = ptbinsDebug[iptbin+1];
@@ -491,6 +495,15 @@ Bool_t AliAnalysisTaskEmcalJetEnergyScale::Run(){
   // efficiency x acceptance: Add histos for all accepted and reconstucted accepted jets
   for(auto partjet : partjets->accepted()){
     fHistos->FillTH1("hJetSpectrumPartAll", partjet->Pt());
+    for(auto itrk = 0; itrk < partjet->GetNumberOfTracks(); itrk++) {
+      auto constituent = partjet->Track(itrk);
+      switch(TMath::Abs(constituent->PdgCode())) {
+      case kPi0: fHistos->FillTH1("hPartConstPi0", constituent->Pt()); break;
+      case kK0Short: fHistos->FillTH1("hPartConstK0s", constituent->Pt()); break;
+      case kGamma: fHistos->FillTH1("hPartConstPhoton", constituent->Pt()); break;
+      default: break;
+      };
+    }
     auto detjet = partjet->ClosestJet();
     int tagstatus = 0;
     if(detjet) {
@@ -566,7 +579,7 @@ void AliAnalysisTaskEmcalJetEnergyScale::ConfigureJetSelection(Double_t minJetPt
 AliAnalysisTaskEmcalJetEnergyScale *AliAnalysisTaskEmcalJetEnergyScale::AddTaskJetEnergyScale(AliJetContainer::EJetType_t jettype, AliJetContainer::ERecoScheme_t recoscheme, AliVCluster::VCluUserDefEnergy_t energydef, Double_t jetradius, Bool_t useDCAL, const char *namepartcont, const char *trigger, const char *suffix) {
   AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
   if(!mgr){
-    ::Error("EmcalTriggerJets::AliAnalysisTaskEmcalJetEnergyScale::AddTaskJetEnergyScale", "No analysis manager available");
+    ::Error("PWGJE::EMCALJetTasks::AliAnalysisTaskEmcalJetEnergyScale::AddTaskJetEnergyScale", "No analysis manager available");
     return nullptr;
   }
 
@@ -613,13 +626,13 @@ AliAnalysisTaskEmcalJetEnergyScale *AliAnalysisTaskEmcalJetEnergyScale::AddTaskJ
 
   AliClusterContainer *clusters(nullptr);
   if(addClusterContainer) {
-    clusters = energyscaletask->AddClusterContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::ClusterContainerNameFactory(isAOD));
+    clusters = energyscaletask->AddClusterContainer(AliEmcalAnalysisFactory::ClusterContainerNameFactory(isAOD));
     clusters->SetDefaultClusterEnergy(energydef);
     clusters->SetClusUserDefEnergyCut(energydef, 0.3);
   }
   AliTrackContainer *tracks(nullptr);
   if(addTrackContainer) {
-    tracks = energyscaletask->AddTrackContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::TrackContainerNameFactory(isAOD));
+    tracks = energyscaletask->AddTrackContainer(AliEmcalAnalysisFactory::TrackContainerNameFactory(isAOD));
   }
 
   const std::string kNameJetsPart = "particleLevelJets",

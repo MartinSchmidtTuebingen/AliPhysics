@@ -195,24 +195,24 @@ void AliAnalysisTaskLundPlane::UserCreateOutputObjects() {
       fTreeMatching->Branch(fShapesVarNames_Matching[8].Data(), &fShapesVar_Matching_sub2, 0,1);
     }
 
-    const Double_t ptbins_true[7] = {0, 20, 40, 60, 80, 120, 160};
-    const Double_t ptbins_reco[5] = {20, 40, 60, 80, 120};
+    const Double_t ptbins_true[13] = {0, 20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220, 340};
+    const Double_t ptbins_reco[11] = {20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220};
     const Double_t Rbins_true[9] = {0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 2.5};
     const Double_t Rbins_reco[8] = {0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4};
-    const Double_t ktbins_true[14] = {-3, -1, -0.75, -0.5, -0.3, -0.1, 0, 0.1, 0.3, 0.5, 0.75, 1, 1.5, 3};
-    const Double_t ktbins_reco[12] = {-1, -0.75, -0.5, -0.3, -0.1, 0, 0.1, 0.3, 0.5, 0.75, 1, 1.5};    
+    const Double_t ktbins_true[15] = {-3, -1, -0.75, -0.5, -0.3, -0.1, 0, 0.1, 0.3, 0.5, 0.75, 1, 1.5, 2, 3};
+    const Double_t ktbins_reco[13] = {-1, -0.75, -0.5, -0.3, -0.1, 0, 0.1, 0.3, 0.5, 0.75, 1, 1.5, 2};    
 
-    fHtrueMatch1D = new TH1D("fHtrueMatch1D", "matched truth jets", 6, ptbins_true);
+    fHtrueMatch1D = new TH1D("fHtrueMatch1D", "matched truth jets", 12, ptbins_true);
     fOutput->Add(fHtrueMatch1D);
-    fHtrueAll1D = new TH1D("fHtrueAll1D", "all truth jets", 6, ptbins_true);
+    fHtrueAll1D = new TH1D("fHtrueAll1D", "all truth jets", 12, ptbins_true);
     fOutput->Add(fHtrueAll1D);
-    fHtrueMatch = new TH3D("fHtrueMatch", "matched truth splittings", 8, Rbins_true, 13, ktbins_true, 6, ptbins_true);
+    fHtrueMatch = new TH3D("fHtrueMatch", "matched truth splittings", 8, Rbins_true, 14, ktbins_true, 12, ptbins_true);
     fOutput->Add(fHtrueMatch);
-    fHtrueAll = new TH3D("fHtrueAll", "all truth splitting", 8, Rbins_true, 13, ktbins_true, 6, ptbins_true);
+    fHtrueAll = new TH3D("fHtrueAll", "all truth splitting", 8, Rbins_true, 14, ktbins_true, 12, ptbins_true);
     fOutput->Add(fHtrueAll);
-    fHrecoMatch = new TH3D("fHrecoMatch", "matched reco splittings", 7, Rbins_reco, 11, ktbins_reco, 4, ptbins_reco);
+    fHrecoMatch = new TH3D("fHrecoMatch", "matched reco splittings", 7, Rbins_reco, 12, ktbins_reco, 10, ptbins_reco);
     fOutput->Add(fHrecoMatch);
-    fHrecoAll = new TH3D("fHrecoAll", "allreco splittings", 7, Rbins_reco, 11, ktbins_reco, 4, ptbins_reco);
+    fHrecoAll = new TH3D("fHrecoAll", "allreco splittings", 7, Rbins_reco, 12, ktbins_reco, 10, ptbins_reco);
     fOutput->Add(fHrecoAll);
   }
 
@@ -289,9 +289,11 @@ Bool_t AliAnalysisTaskLundPlane::FillHistograms() {
 			if(mytrigmb==kTRUE && mytrigej1==kTRUE && mytrigej2==kFALSE) mytrig=4;
                  	if(mytrigmb==kTRUE && mytrigej1==kFALSE && mytrigej2==kTRUE) mytrig=5;
 				if(mytrigmb==kFALSE && mytrigej1==kTRUE && mytrigej2==kTRUE) mytrig=6;
+       if(mytrig==-1) return 0;
+
       }
 
-      if(mytrig==-1) return 0;
+     
 
 
     UInt_t newrun=InputEvent()->GetRunNumber();  
@@ -396,7 +398,7 @@ if(mytrig==5){
         if (!(fJetShapeSub == kConstSub))
           jet3 = jet1->ClosestJet();
         if (!jet3) {
-          Printf("jet3 does not exist, returning");
+	  //   Printf("jet3 does not exist, returning");
           continue;
         }
       }
@@ -442,7 +444,7 @@ if(mytrig==5){
           kMatched = 3;
 
         ptMatch = jet3->Pt();
-
+        cout<<"the matched jet "<<jet3->Pt()<<" "<<kMatched<<endl;
         IterativeDeclusteringMC(jet3, kMatched, const1Part, constPart);
        
       }
@@ -625,6 +627,7 @@ void AliAnalysisTaskLundPlane::IterativeDeclusteringMC(
   for (auto  part: fJet->GetParticleConstituents()) {
     PseudoTracks.reset(part.Px(), part.Py(), part.Pz(), part.E());
     const AliVParticle* part2 = part.GetParticle();
+    if (part2->Charge() == 0) continue;
     PseudoTracks.set_user_index(GetConstituentID(constituentIndex, part2, fJet));
     fInputVectors.push_back(PseudoTracks);
     constituentIndex++;
@@ -727,7 +730,7 @@ void AliAnalysisTaskLundPlane::IterativeDeclusteringMC(
 Bool_t AliAnalysisTaskLundPlane::SubjetMatching(std::vector < fastjet::PseudoJet > *constPart1, std::vector<std::vector < fastjet::PseudoJet > *> *constPart, std::vector < fastjet::PseudoJet > *constDet1, std::vector<std::vector < fastjet::PseudoJet > *> *constDet)
 {
   fHtrueAll1D->Fill(fShapesVar_Splittings_ptjet_part);
-  if ((fShapesVar_Splittings_ptjet_part < 0) || (fShapesVar_Splittings_ptjet_part > 160.)) return kFALSE;
+  if ((fShapesVar_Splittings_ptjet_part < 0) || (fShapesVar_Splittings_ptjet_part > 340.)) return kFALSE;
   
   std::vector<int> reco_matches;
   float ptsub1_det = 0;
@@ -774,13 +777,13 @@ Bool_t AliAnalysisTaskLundPlane::SubjetMatching(std::vector < fastjet::PseudoJet
         }
       if (ind_true_det == -1) continue;
       if (ind_true!=ind_true_det) continue;
-      if ((fShapesVar_Splittings_ptjet > 120) || (fShapesVar_Splittings_ptjet < 20.)) continue;
+      if ((fShapesVar_Splittings_ptjet > 220) || (fShapesVar_Splittings_ptjet < 20.)) continue;
       float lnkt_det = std::log(fShapesVar_Splittings_kt.at(0).at(ind_reco));
       float lnr_det = std::log(0.4/fShapesVar_Splittings_angle.at(0).at(ind_reco));
-      if (lnkt_det < -1. || lnkt_det > 1.5) continue;
+      if (lnkt_det < -1. || lnkt_det > 2) continue;
       if (lnr_det < 0. || lnr_det > 1.4) continue;
       reco_matches.push_back(ind_reco);            
-      fHtrueMatch->Fill(lnr_part, lnkt_part, fShapesVar_Splittings_ptjet);
+      fHtrueMatch->Fill(lnr_part, lnkt_part, fShapesVar_Splittings_ptjet_part);
 
       fShapesVar_Matching_ptjet = fShapesVar_Splittings_ptjet;
       fShapesVar_Matching_mytrig = fShapesVar_Splittings_mytrig;
@@ -799,14 +802,14 @@ Bool_t AliAnalysisTaskLundPlane::SubjetMatching(std::vector < fastjet::PseudoJet
       fTreeMatching->Fill();
     }
 
-  if ((fShapesVar_Splittings_ptjet > 120) || (fShapesVar_Splittings_ptjet < 20.)) return kFALSE;
+  if ((fShapesVar_Splittings_ptjet > 220) || (fShapesVar_Splittings_ptjet < 20.)) return kFALSE;
   fHtrueMatch1D->Fill(fShapesVar_Splittings_ptjet_part);
 
    for (int i = 0; i < fShapesVar_Splittings_kt.at(0).size(); i++)
      {
        float lnkt_det = std::log(fShapesVar_Splittings_kt.at(0).at(i));
       float lnr_det = std::log(0.4/fShapesVar_Splittings_angle.at(0).at(i));
-      if (lnkt_det < -1. || lnkt_det > 1.5) continue;
+      if (lnkt_det < -1. || lnkt_det > 2) continue;
       if (lnr_det < 0. || lnr_det > 1.4) continue;
 
       fHrecoAll->Fill(lnr_det, lnkt_det, fShapesVar_Splittings_ptjet);

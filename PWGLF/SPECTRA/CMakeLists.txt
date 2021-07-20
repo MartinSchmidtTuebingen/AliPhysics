@@ -35,29 +35,9 @@ include_directories(${ROOT_INCLUDE_DIRS}
 
 # Sources - alphabetical order
 set(SRCS
-  ChargedHadrons/dNdPt/AlidNdPtHelper.cxx
-  ChargedHadrons/dNdPt/AliAnalysisTaskCutTest.cxx
-  ChargedHadrons/dNdPt/AlidNdPtUnifiedAnalysisTask.cxx
-  ChargedHadrons/dNdPt/MeanPtRaw/AliAnalysisTaskMeanPtRaw.cxx
-  ChargedHadrons/dNdPt/AlidNdPtAcceptanceCuts.cxx
-  ChargedHadrons/dNdPt/AlidNdPtAnalysis.cxx
-  ChargedHadrons/dNdPt/AlidNdPtAnalysisPbPb.cxx
-  ChargedHadrons/dNdPt/AlidNdPtAnalysisPbPb2011.cxx
-  ChargedHadrons/dNdPt/AlidNdPtAnalysisPbPbAOD.cxx
-  ChargedHadrons/dNdPt/AlidNdPtAnalysispPb.cxx
-  ChargedHadrons/dNdPt/AlidNdPtBackgroundCuts.cxx
-  ChargedHadrons/dNdPt/AlidNdPtCorrection.cxx
-  ChargedHadrons/dNdPt/AlidNdPtCutAnalysis.cxx
-  ChargedHadrons/dNdPt/AlidNdPtCutAnalysisPbPb.cxx
-  ChargedHadrons/dNdPt/AlidNdPt.cxx
-  ChargedHadrons/dNdPt/AlidNdPtEfficiency.cxx
-  ChargedHadrons/dNdPt/AlidNdPtEventCuts.cxx
-  ChargedHadrons/dNdPt/AlidNdPtHelper.cxx
-  ChargedHadrons/dNdPt/AlidNdPtTask.cxx
   ChargedHadrons/AliMCSpectraWeights/AliMCSpectraWeightsAnalysisTask.cxx
   ChargedHadrons/dNdPt/Framework/AlidNdPtTools.cxx
   ChargedHadrons/dNdPt/Framework/AliAnalysisTaskMKBase.cxx
-  ChargedHadrons/dNdPt/Framework/AliAnalysisTaskBaseWeights.cxx
   ChargedHadrons/dNdPt/Framework/AliAnalysisTaskMKTest.cxx
   ChargedHadrons/dNdPt/Framework/AliAnalysisTaskTPCMatchEff.cxx
   ChargedHadrons/dNdPt/Framework/AliAnalysisTaskDCArStudy.cxx
@@ -67,12 +47,6 @@ set(SRCS
   ChargedHadrons/dNdPt/Framework/AliAnalysisTaskSpectra.cxx
   ChargedHadrons/dNdPt/Framework/AliAnalysisTaskSpectraV0M.cxx
   ChargedHadrons/dNdPt/Framework/AliAnalysisTaskFilterEventTPCdEdx.cxx
-  ChargedHadrons/dNdPt/AlidNdPtTrackDumpTask.cxx
-  ChargedHadrons/dNdPt/AliPtResolAnalysis.cxx
-  ChargedHadrons/dNdPt/AliPtResolAnalysisPbPb.cxx
-  ChargedHadrons/dNdPt/AlimPtAnalysis.cxx
-  ChargedHadrons/dNdPt/AlimPtMatrix.cxx
-  ChargedHadrons/dNdPt/AlimPtMatrixZDC.cxx
   ChargedHadrons/dNdPt/AliAnalysisTaskSpectraDPhi.cxx
   ChargedHadrons/dNdPtVsMultpp/AliAnalysisTaskPPvsMultINEL0.cxx
   PiKaPr/ITSsa/AliAnalysisTaskSEITSsaSpectra.cxx
@@ -157,9 +131,13 @@ set(SRCS
 )
 if(${ROOT_VERSION} GREATER_EQUAL 6.0)
   list(APPEND SRCS ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTask.cxx)
+  list(APPEND SRCS ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTaskOLD.cxx)
   list(APPEND SRCS ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTaskUE.cxx)
   list(APPEND SRCS ChargedHadrons/dNdPt/Framework/AliAnalysisTaskCutStudies.cxx)
   list(APPEND SRCS ChargedHadrons/dNdPt/Framework/AliAnalysisTaskSpectraEtaPhi.cxx)
+  list(APPEND SRCS ChargedHadrons/dNdPt/Framework/AliAnalysisTaskSpectraINEL0.cxx)
+  list(APPEND SRCS ChargedHadrons/dNdPt/Framework/AliAnalysisTaskBaseWeights.cxx)
+  list(APPEND SRCS ChargedHadrons/AliMCSpectraWeights/AliMCWeightsTask.cxx)
 endif()
 
 # Headers from sources
@@ -249,6 +227,7 @@ install(DIRECTORY ChargedHadrons/dNdPt/MeanPtRaw/macros DESTINATION
   PWGLF/SPECTRA/ChargedHadrons/dNdPt/MeanPtRaw)
 install(DIRECTORY ChargedHadrons/dNdPtVsMultpp/macros DESTINATION  PWGLF/SPECTRA/ChargedHadrons/dNdPtVsMultpp)
 install(FILES ChargedHadrons/AliMCSpectraWeights/AddTask_phuhn_MCSpectraWeights.C DESTINATION PWGLF/SPECTRA/ChargedHadrons/AliMCSpectraWeights)
+install(FILES ChargedHadrons/AliMCSpectraWeights/AddTask_MCWeights.C DESTINATION PWGLF/SPECTRA/ChargedHadrons/AliMCSpectraWeights)
 install(DIRECTORY IdentifiedHighPt/train/macros DESTINATION  PWGLF/SPECTRA/IdentifiedHighPt/train)
 install(DIRECTORY IdentifiedHighPt/train/macros1 DESTINATION  PWGLF/SPECTRA/IdentifiedHighPt/train)
 install(DIRECTORY Kinks/macros DESTINATION  PWGLF/SPECTRA/Kinks)

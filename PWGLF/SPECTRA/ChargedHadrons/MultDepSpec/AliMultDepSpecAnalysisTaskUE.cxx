@@ -10,7 +10,7 @@ using std::vector;
  */
 //**************************************************************************************************
 AliMultDepSpecAnalysisTaskUE::AliMultDepSpecAnalysisTaskUE()
-  : AliMultDepSpecAnalysisTask()
+  : AliMultDepSpecAnalysisTaskOLD()
 {
   // ROOT IO constructor, don't allocate memory here!
 }
@@ -21,7 +21,7 @@ AliMultDepSpecAnalysisTaskUE::AliMultDepSpecAnalysisTaskUE()
  */
 //**************************************************************************************************
 AliMultDepSpecAnalysisTaskUE::AliMultDepSpecAnalysisTaskUE(const char* name)
-  : AliMultDepSpecAnalysisTask(name)
+  : AliMultDepSpecAnalysisTaskOLD(name)
 {
 }
 
@@ -32,7 +32,7 @@ AliMultDepSpecAnalysisTaskUE::AliMultDepSpecAnalysisTaskUE(const char* name)
 //**************************************************************************************************
 AliMultDepSpecAnalysisTaskUE::~AliMultDepSpecAnalysisTaskUE()
 {
-  // AliMultDepSpecAnalysisTask::~AliMultDepSpecAnalysisTask();
+  // AliMultDepSpecAnalysisTaskOLD::~AliMultDepSpecAnalysisTaskOLD();
 }
 
 //**************************************************************************************************
@@ -43,18 +43,23 @@ AliMultDepSpecAnalysisTaskUE::~AliMultDepSpecAnalysisTaskUE()
 void AliMultDepSpecAnalysisTaskUE::DefineDefaultAxes(int maxMult)
 {
   // add dimensions used in base class
-  AliMultDepSpecAnalysisTask::DefineDefaultAxes(maxMult);
+  AliMultDepSpecAnalysisTaskOLD::DefineDefaultAxes(maxMult);
 
   // additional dimensions for UE studies
   std::vector<double> ptBins
     = { 0.1, 1.0, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0,  3.2,  3.4,  3.6,  3.8,  4.0, 4.5,
         5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0 };
 
+  std::vector<double> sumptBins
+    = { 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 3.2, 3.4, 3.6, 3.8, 4.0,
+        4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0 };
+
   SetAxis(pt_lead_meas, "pt_lead_meas", "#it{p}_{T,Lead} (GeV/#it{c})", ptBins);
+  SetAxis(sum_pt, "sum_pt", "sum #it{p}_{T} (GeV/#it{c})", sumptBins);
   SetAxis(phi_lead_meas, "phi_lead_meas", "#it{#it{#phi}_{Lead}}", { 0, 2 * TMath::Pi() }, 180);
-  SetAxis(delta_pt_lead, "delta_pt_lead", "#Delta(#it{p}_{T,Lead})", { 0., 2. }, 20);
-  SetAxis(delta_phi_lead, "delta_phi_lead", "#Delta(#it{#phi}_{Lead})", { 0, 2 * TMath::Pi() },
-          180);
+  SetAxis(delta_pt_lead, "delta_pt_lead", "#Delta(#it{p}_{T,Lead})", { 0., 2. }, 40);
+  SetAxis(delta_phi_lead, "delta_phi_lead", "#Delta(#it{#phi}_{Lead})", { 0, TMath::Pi() / 4 },
+          45);
   SetAxis(delta_phi, "delta_phi", "#it{#phi}_{Lead} - #it{#phi}_{Track}", { 0, 2 * TMath::Pi() },
           180);
 }
@@ -67,7 +72,7 @@ void AliMultDepSpecAnalysisTaskUE::DefineDefaultAxes(int maxMult)
 void AliMultDepSpecAnalysisTaskUE::BookHistograms()
 {
   // book all default histograms
-  AliMultDepSpecAnalysisTask::BookHistograms();
+  AliMultDepSpecAnalysisTaskOLD::BookHistograms();
 
   // book UE specific histograms
   BookHistogram(fHistLeadPt, "fHistLeadPt", { pt_lead_meas });
@@ -75,20 +80,30 @@ void AliMultDepSpecAnalysisTaskUE::BookHistograms()
   BookHistogram(fHistDeltaPhi, "fHistDeltaPhi", { delta_phi });
   BookHistogram(fHistPtLeadCutLoss, "fHistPtLeadCutLoss", { pt_meas });
   BookHistogram(fHistPlateau, "fHistPlateau", { pt_lead_meas, mult_meas });
+  BookHistogram(fHistSumPt, "fHistSumPt", { sum_pt, sum_pt });
+  BookHistogram(fHistMultCorr, "fHistMultCorr", { mult_meas, mult_meas });
+  BookHistogram(fHistMeanSumPt, "fHistMeanSumPt", { sum_pt });
+  BookHistogram(fHistMeanMult, "fHistMeanMult", { mult_meas });
 
   if(fIsMC)
   {
     BookHistogram(fHistMCResoPtLead, "fHistMCResoPtLead", { delta_pt_lead });
     BookHistogram(fHistMCResoPhiLead, "fHistMCResoPhiLead", { delta_phi_lead });
-    BookHistogram(fHistDiffToMCPtLead, "fHistDiffToMCPtLead", { delta_pt_lead });
-    BookHistogram(fHistDiffToMCPhiLead, "fHistDiffToMCPhiLead", { delta_phi_lead });
+    BookHistogram(fHistMCPlateau, "fHistMCPlateau", { pt_lead_meas, mult_meas });
+    BookHistogram(fHistMCSumPt, "fHistMCSumPt", { sum_pt, sum_pt });
+    BookHistogram(fHistMCMultCorr, "fHistMCMultCorr", { mult_meas, mult_meas });
+    BookHistogram(fHistMCMeanSumPt, "fHistMCMeanSumPt", { sum_pt });
+    BookHistogram(fHistMCMeanMult, "fHistMCMeanMult", { mult_meas });
   }
 
   // check additional required memory
   double requiredMemory = fHistLeadPt.GetSize() + fHistLeadPhi.GetSize() + fHistDeltaPhi.GetSize()
                           + fHistPtLeadCutLoss.GetSize() + fHistPlateau.GetSize()
                           + fHistMCResoPtLead.GetSize() + fHistMCResoPhiLead.GetSize()
-                          + fHistDiffToMCPtLead.GetSize() + fHistDiffToMCPhiLead.GetSize();
+                          + fHistSumPt.GetSize() + fHistMultCorr.GetSize()
+                          + fHistMeanSumPt.GetSize() + fHistMeanMult.GetSize()
+                          + fHistMCMeanSumPt.GetSize() + fHistMCMeanMult.GetSize()
+                          + fHistMCPlateau.GetSize()+ fHistMCSumPt.GetSize() + fHistMCMultCorr.GetSize();
 
   AliError(Form("Estimated additional memory usage of histograms from UE analysis: %.2f MiB.",
                 requiredMemory / 1048576));
@@ -122,12 +137,12 @@ bool AliMultDepSpecAnalysisTaskUE::InitEvent()
     if(fMultMeas != 0) fHistPtLeadCutLoss.Fill(fPtLead);
     return false;
   }
-  if(fIsMC && (fPtLead < fPtLeadCut))
-  {
-    if(fMultMeas != 0) fHistPtLeadCutLoss.Fill(fPtLead);
-    return false;
-  }
-  return AliMultDepSpecAnalysisTask::InitEvent();
+  // if(fIsMC && (fPtLead < fPtLeadCut))
+  // {
+  //   if(fMultMeas != 0) fHistPtLeadCutLoss.Fill(fPtLead);
+  //   return false;
+  // }
+  return AliMultDepSpecAnalysisTaskOLD::InitEvent();
 }
 
 //**************************************************************************************************
@@ -139,10 +154,12 @@ void AliMultDepSpecAnalysisTaskUE::FindLeadingTrack()
 {
   fPtLead = 0;
   fPhiLead = 0;
+  fSumPtMeasTot = 0;
+  fSumPtTrueTot = 0;
+  fMultMeasTot = 0;
+  fMultTrueTot = 0;
   if(fIsMC)
   {
-    fMCPtLead = 0;
-    fMCPhiLead = 0;
     fMCPtOfLead = 0;
     fMCPhiOfLead = 0;
   }
@@ -175,20 +192,24 @@ void AliMultDepSpecAnalysisTaskUE::FindLeadingTrack()
     // Find track with highest Pt
     if(fPt > fPtLead)
     {
-      fPtLead = fPt;
+      fPtLead  = fPt;
       fPhiLead = fPhi;
       if(fIsMC)
       {
-        fMCPtOfLead = fMCPt;
+        fMCPtOfLead  = fMCPt;
         fMCPhiOfLead = fMCPhi;
       }
     }
 
-    if((fIsMC) && (fMCPt > fMCPtLead))
+    fSumPtMeasTot += fPt;
+    fMultMeasTot  += 1;
+
+    if (fIsMC)
     {
-      fMCPtLead = fMCPt;
-      fMCPhiLead = fMCPhi;
+      if (fMCIsChargedPrimary) fSumPtTrueTot += fMCPt;
+      if (fMCIsChargedPrimary) fMultTrueTot  += 1;
     }
+
   }
 }
 
@@ -199,7 +220,17 @@ void AliMultDepSpecAnalysisTaskUE::FindLeadingTrack()
 //**************************************************************************************************
 void AliMultDepSpecAnalysisTaskUE::FillEventHistos()
 {
-  AliMultDepSpecAnalysisTask::FillEventHistos();
+  AliMultDepSpecAnalysisTaskOLD::FillEventHistos();
+  if(fIsFirstEventInJob){
+     fHistTrainInfoUE.Fill(Form("cos min: %.1f - cos max %.1f - ptleadcut %.2f", fCosPhiMin, fCosPhiMax, fPtLeadCut));
+     fIsFirstEventInJob = false;
+  }
+
+  fHistSumPt.Fill(fSumPtMeasTot, fSumPtMeas);
+  fHistMultCorr.Fill(fMultMeasTot, fMultMeas);
+
+  fHistMeanSumPt.FillWeight(fSumPtMeas, fSumPtMeasTot);
+  fHistMeanMult.FillWeight(fMultMeas, fMultMeasTot);
 
   if(fMultMeas == 0) return; // ensure that number of tracks is non-zero
   fHistLeadPt.Fill(fPtLead);
@@ -208,13 +239,17 @@ void AliMultDepSpecAnalysisTaskUE::FillEventHistos()
 
   if(fIsMC)
   {
+    fHistMCSumPt.Fill(fSumPtTrueTot, fSumPtTrue);
+    fHistMCMultCorr.Fill(fMultTrueTot, fMultTrue);
+
+    fHistMCMeanSumPt.FillWeight(fSumPtTrue, fSumPtTrueTot);
+    fHistMCMeanMult.FillWeight(fMultTrue, fMultTrueTot); //first weight then position
+
+    if (fMultTrue == 0) return;
+    fHistMCPlateau.Fill(fMCPtOfLead, fMultTrue);
     // resolution of measurement:
     fHistMCResoPtLead.Fill(fabs(fPtLead - fMCPtOfLead));
     fHistMCResoPhiLead.Fill(fabs(fPhiLead - fMCPhiOfLead));
-
-    // maybe one could also determine MC truth particle with highest pt and compare phi
-    fHistDiffToMCPtLead.Fill(fabs(fMCPtLead - fPtLead));
-    fHistDiffToMCPhiLead.Fill(fabs(fMCPhiLead - fPhiLead));
   }
 }
 
@@ -225,8 +260,9 @@ void AliMultDepSpecAnalysisTaskUE::FillEventHistos()
 //**************************************************************************************************
 void AliMultDepSpecAnalysisTaskUE::FillMeasTrackHistos()
 {
-  AliMultDepSpecAnalysisTask::FillMeasTrackHistos();
+  AliMultDepSpecAnalysisTaskOLD::FillMeasTrackHistos();
 
+  if (fMultMeas == 0) return;
   if (fPhiLead-fPhi >= 0) fHistDeltaPhi.Fill(fPhiLead-fPhi);
   else fHistDeltaPhi.Fill(2*TMath::Pi() + fPhiLead-fPhi);
 }
@@ -238,7 +274,7 @@ void AliMultDepSpecAnalysisTaskUE::FillMeasTrackHistos()
 //**************************************************************************************************
 void AliMultDepSpecAnalysisTaskUE::FillMeasParticleHistos()
 {
-  AliMultDepSpecAnalysisTask::FillMeasParticleHistos();
+  AliMultDepSpecAnalysisTaskOLD::FillMeasParticleHistos();
 }
 
 //**************************************************************************************************
@@ -248,7 +284,7 @@ void AliMultDepSpecAnalysisTaskUE::FillMeasParticleHistos()
 //**************************************************************************************************
 void AliMultDepSpecAnalysisTaskUE::FillTrueParticleHistos()
 {
-  AliMultDepSpecAnalysisTask::FillTrueParticleHistos();
+  AliMultDepSpecAnalysisTaskOLD::FillTrueParticleHistos();
 }
 
 //**************************************************************************************************
@@ -258,7 +294,7 @@ void AliMultDepSpecAnalysisTaskUE::FillTrueParticleHistos()
 //**************************************************************************************************
 bool AliMultDepSpecAnalysisTaskUE::InitTrack(AliVTrack* track)
 {
-  bool isValidTrack = AliMultDepSpecAnalysisTask::InitTrack(track);
+  bool isValidTrack = AliMultDepSpecAnalysisTaskOLD::InitTrack(track);
   // extract additional UE track infos
   // fDeltaLeadingPt = fLeadingPt - fPt;
   // fDeltaLeadingPhi = fLeadingPhi - fPhi;
@@ -275,14 +311,14 @@ bool AliMultDepSpecAnalysisTaskUE::InitTrack(AliVTrack* track)
 //**************************************************************************************************
 bool AliMultDepSpecAnalysisTaskUE::InitParticle(AliMCParticle* particle)
 {
-  bool isValidParticle = AliMultDepSpecAnalysisTask::InitParticle(particle);
+  bool isValidParticle = AliMultDepSpecAnalysisTaskOLD::InitParticle(particle);
 
   return isValidParticle;
 }
 
 bool AliMultDepSpecAnalysisTaskUE::InitParticle(AliAODMCParticle* particle)
 {
-  bool isValidParticle = AliMultDepSpecAnalysisTask::InitParticle(particle);
+  bool isValidParticle = AliMultDepSpecAnalysisTaskOLD::InitParticle(particle);
 
   return isValidParticle;
 }
@@ -295,11 +331,8 @@ bool AliMultDepSpecAnalysisTaskUE::InitParticle(AliAODMCParticle* particle)
 //**************************************************************************************************
 bool AliMultDepSpecAnalysisTaskUE::SelectTrack(bool count)
 {
-  bool inUE =  ((-0.5 <= TMath::Cos(fPhiLead - fPhi)) && (TMath::Cos(fPhiLead - fPhi) <= 0.5));
-  bool inSelectedRegion = ((fCosPhiMin <= TMath::Cos(fPhiLead - fPhi)) && (TMath::Cos(fPhiLead - fPhi) <= fCosPhiMax));
 
-  if (count) return inUE;
-  else return inSelectedRegion;
+  return (fCosPhiMin <= TMath::Cos(fPhiLead - fPhi)) && (TMath::Cos(fPhiLead - fPhi) <= fCosPhiMax);
 
 }
 
@@ -312,11 +345,7 @@ bool AliMultDepSpecAnalysisTaskUE::SelectTrack(bool count)
 bool AliMultDepSpecAnalysisTaskUE::SelectParticle(bool count)
 {
 
-   bool inUE = ((-0.5 <= TMath::Cos(fMCPhiLead - fMCPhi)) && (TMath::Cos(fMCPhiLead - fMCPhi) <= 0.5));
-   bool inSelectedRegion = ((fCosPhiMin <= TMath::Cos(fMCPhiLead - fMCPhi)) && (TMath::Cos(fMCPhiLead - fMCPhi) <= fCosPhiMax));
-
-   if (count) return inUE;
-   else return inSelectedRegion;
+   return ((fCosPhiMin <= TMath::Cos(fMCPhiOfLead - fMCPhi)) && (TMath::Cos(fMCPhiOfLead - fMCPhi) <= fCosPhiMax));
 
 }
 
@@ -408,5 +437,5 @@ bool AliMultDepSpecAnalysisTaskUE::InitTask(AliMultDepSpecAnalysisTaskUE::PhiRan
   }
 
   SetPtLeadCut(ptLeadMIN);
-  return AliMultDepSpecAnalysisTask::InitTask(isMC, isAOD, dataSet, options, cutMode);
+  return AliMultDepSpecAnalysisTaskOLD::InitTask(isMC, isAOD, dataSet, options, cutMode);
 }

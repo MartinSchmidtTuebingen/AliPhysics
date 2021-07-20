@@ -69,6 +69,7 @@ AliAnalysisTaskEmcalJetEnergySpectrum::AliAnalysisTaskEmcalJetEnergySpectrum():
   fNameJetContainer("datajets"),
   fRequestTriggerClusters(true),
   fRequestCentrality(false),
+  fFillHistosWeighted(kNoWeightType),
   fUseRun1Range(false),
   fUseSumw2(false),
   fUseMuonCalo(false),
@@ -99,6 +100,7 @@ AliAnalysisTaskEmcalJetEnergySpectrum::AliAnalysisTaskEmcalJetEnergySpectrum(EMC
   fNameJetContainer("datajets"),
   fRequestTriggerClusters(true),
   fRequestCentrality(false),
+  fFillHistosWeighted(kNoWeightType),
   fUseRun1Range(false),
   fUseSumw2(false),
   fUseMuonCalo(false),
@@ -191,7 +193,7 @@ void AliAnalysisTaskEmcalJetEnergySpectrum::UserCreateOutputObjects(){
 
   if(fEMCALClusterBias > 1e-5 && !this->GetClusterContainer()) {
     std::cout << "Adding cluster bias for L0 trigger studies" << std::endl;
-    this->AddClusterContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::ClusterContainerNameFactory(fInputHandler->IsA() == AliAODInputHandler::Class()));
+    this->AddClusterContainer(AliEmcalAnalysisFactory::ClusterContainerNameFactory(fInputHandler->IsA() == AliAODInputHandler::Class()));
   }
 
   for(auto h : *fHistos->GetListOfHistograms()) fOutput->Add(h);
@@ -274,6 +276,18 @@ bool AliAnalysisTaskEmcalJetEnergySpectrum::Run(){
   Double_t weight = 1.;
   if(fUseDownscaleWeight) {
     weight = 1./PWG::EMCAL::AliEmcalDownscaleFactorsOCDB::Instance()->GetDownscaleFactorForTriggerClass(MatchTrigger(fInputEvent->GetFiredTriggerClasses().Data(), fTriggerSelectionString.Data(), fUseMuonCalo));
+  }
+  if(fFillHistosWeighted != EWeightType_t::kNoWeightType && isMC) {
+    // Get cross section weight from supported generator event header
+    double mcweight = 1.;
+    switch(fFillHistosWeighted) {
+      case EWeightType_t::kCrossSectionWeightType: mcweight = GetCrossSectionFromHeader(); break;
+      case EWeightType_t::kEventWeightType: mcweight = GetEventWeightFromHeader(); break;
+      case EWeightType_t::kNoWeightType: break;
+    };
+    if(mcweight > 0) {
+      weight *= mcweight;
+    }
   }
   AliDebugStream(2) << "Found downscale weight " << weight << " for trigger " << fTriggerSelectionString << std::endl;
   fHistos->FillTH1("hEventCounterAbs", 1.);
@@ -537,11 +551,11 @@ AliAnalysisTaskEmcalJetEnergySpectrum *AliAnalysisTaskEmcalJetEnergySpectrum::Ad
   AliTrackContainer *tracks(nullptr);
   AliClusterContainer *clusters(nullptr);
   if(jettype == AliJetContainer::kChargedJet || jettype == AliJetContainer::kFullJet) {
-    tracks = task->AddTrackContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::TrackContainerNameFactory(isAOD));
+    tracks = task->AddTrackContainer(AliEmcalAnalysisFactory::TrackContainerNameFactory(isAOD));
     tracks->SetMinPt(0.15);
   }
   if(jettype == AliJetContainer::kNeutralJet || jettype == AliJetContainer::kFullJet){
-    clusters = task->AddClusterContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::ClusterContainerNameFactory(isAOD));
+    clusters = task->AddClusterContainer(AliEmcalAnalysisFactory::ClusterContainerNameFactory(isAOD));
     clusters->SetDefaultClusterEnergy(energydef);
     clusters->SetClusUserDefEnergyCut(energydef, 0.3);
   }

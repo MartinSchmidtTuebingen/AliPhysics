@@ -70,7 +70,7 @@ fITSClusterMap(0), fTPCFindableClusters(0.), fTPCFoundClusters(0.), fTPCSharedCl
 fTPCFractionSharedClusters(0.), fTPCCrossedRows(0.),
 fTPCCrossedRowsOverFindableClusters(0.), fTPCChi2PerCluster(0.), fTPCGoldenChi2(0.), fTPCGeomLength(0.),
 fMCParticle(0), fMCLabel(0), fMCPt(0),
-fMCEta(0), fMCPhi(0), fMCisPrim(kFALSE), fMCisSec(kFALSE),
+fMCEta(0), fMCY(0), fMCPhi(0), fMCisPrim(kFALSE), fMCisSec(kFALSE),
 fMCisSecDecay(kFALSE), fMCisSecMat(kFALSE), fMCPrimSec(-1), fMCPileUpTrack(0),
 fMCParticleType(AlidNdPtTools::kUndefined),
 fMCProdcutionType(AlidNdPtTools::kUnknown), fMCPDGCode(0),
@@ -134,7 +134,7 @@ fITSClusterMap(0), fTPCFindableClusters(0.), fTPCFoundClusters(0.), fTPCSharedCl
 fTPCFractionSharedClusters(0.), fTPCCrossedRows(0.),
 fTPCCrossedRowsOverFindableClusters(0.), fTPCChi2PerCluster(0.), fTPCGoldenChi2(0.), fTPCGeomLength(0.),
 fMCParticle(0), fMCLabel(0), fMCPt(0),
-fMCEta(0), fMCPhi(0), fMCisPrim(kFALSE), fMCisSec(kFALSE),
+fMCEta(0), fMCY(0), fMCPhi(0), fMCisPrim(kFALSE), fMCisSec(kFALSE),
 fMCisSecDecay(kFALSE), fMCisSecMat(kFALSE), fMCPrimSec(-1), fMCPileUpTrack(0),
 fMCParticleType(AlidNdPtTools::kUndefined),
 fMCProdcutionType(AlidNdPtTools::kUnknown), fMCPDGCode(0),
@@ -419,7 +419,6 @@ Bool_t AliAnalysisTaskMKBase::InitEvent()
   fMultSelection = static_cast<AliMultSelection*>(fEvent->FindListObject("MultSelection"));
 
   // apply event cuts
-  fIsAcceptedAliEventCuts = kFALSE; // reset transient member
   fIsAcceptedAliEventCuts = fEventCuts.AcceptEvent(fEvent);
 
   //FIXME: in principle all of the following is not necessary if event will be rejected anyway...
@@ -462,6 +461,7 @@ Bool_t AliAnalysisTaskMKBase::InitEvent()
   }
 
   // FIXME: what is this??
+  /*
   fNTracksAcc = 0;
   if (fESDtrackCutsM) {
     for (Int_t i = 0; i < fNTracksESD; i++) {
@@ -476,7 +476,7 @@ Bool_t AliAnalysisTaskMKBase::InitEvent()
     fNTracksAcc = fNTracksESD;
     Log("noAliESDTrackCutsM");
   }
-
+  */
   return kTRUE;
 }
 
@@ -984,6 +984,7 @@ Bool_t AliAnalysisTaskMKBase::InitMCParticle()
 {
   fMCPt = fMCParticle->Pt();
   fMCEta = fMCParticle->Eta();
+  fMCY = fMCParticle->Y();
   fMCPhi = fMCParticle->Phi();
   fMCCharge = fMCParticle->Charge();
   fMCQ = fMCCharge / 3.0;
@@ -996,11 +997,6 @@ Bool_t AliAnalysisTaskMKBase::InitMCParticle()
   }
 
   fMCisPrim = fMC->IsPhysicalPrimary(fMCLabel);
-
-  Bool_t isPhysPrimStack = fMCStack->IsPhysicalPrimary(fMCLabel);
-  if (fMCisPrim != isPhysPrimStack) {
-    Log("PhysPrimMismatch");
-  }
 
   fMCisSecDecay = fMC->IsSecondaryFromWeakDecay(fMCLabel);
   fMCisSecMat = fMC->IsSecondaryFromMaterial(fMCLabel);

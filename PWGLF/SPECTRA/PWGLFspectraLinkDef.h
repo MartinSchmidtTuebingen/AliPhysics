@@ -1,29 +1,9 @@
 #ifdef __CINT__
 
-#pragma link C++ class AlidNdPtHelper+;
-#pragma link C++ class AliAnalysisTaskCutTest+;
-#pragma link C++ class AlidNdPtUnifiedAnalysisTask+;
-#pragma link C++ class AliAnalysisTaskMeanPtRaw+;
 #pragma link C++ class AliAnalysisTaskPPvsMultINEL0+;
-#pragma link C++ class AlidNdPtAcceptanceCuts+;
-#pragma link C++ class AlidNdPtAnalysis+;
-#pragma link C++ class AlidNdPtAnalysisPbPb+;
-#pragma link C++ class AlidNdPtAnalysisPbPb2011+;
-#pragma link C++ class AlidNdPtAnalysisPbPbAOD+;
-#pragma link C++ class AlidNdPtAnalysispPb+;
-#pragma link C++ class AlidNdPtBackgroundCuts+;
-#pragma link C++ class AlidNdPtCorrection+;
-#pragma link C++ class AlidNdPtCutAnalysis+;
-#pragma link C++ class AlidNdPtCutAnalysisPbPb+;
-#pragma link C++ class AlidNdPt+;
-#pragma link C++ class AlidNdPtEfficiency+;
-#pragma link C++ class AlidNdPtEventCuts+;
-#pragma link C++ class AlidNdPtTask+;
-#pragma link C++ class AlidNdPtHelper+;
 #pragma link C++ class AlidNdPtTools+;
 #pragma link C++ class AliAnalysisTaskSpectraDPhi+;
 #pragma link C++ class AliAnalysisTaskMKBase+;
-#pragma link C++ class AliAnalysisTaskBaseWeights+;
 #pragma link C++ class AliAnalysisTaskMKTest+;
 #pragma link C++ class AliAnalysisTaskTPCMatchEff+;
 #pragma link C++ class AliAnalysisTaskDCArStudy+;
@@ -39,17 +19,15 @@
 #if defined(__CLING__)
 #pragma link C++ struct Hist::Axis+;
 #pragma link C++ class AliMultDepSpecAnalysisTask+;
+#pragma link C++ class AliMultDepSpecAnalysisTaskOLD+;
 #pragma link C++ class AliMultDepSpecAnalysisTaskUE+;
 #pragma link C++ class AliAnalysisTaskCutStudies+;
 #pragma link C++ class AliAnalysisTaskSpectraEtaPhi+;
+#pragma link C++ class AliAnalysisTaskSpectraINEL0+;
+#pragma link C++ class AliMCWeightsTask+;
+#pragma link C++ class AliAnalysisTaskBaseWeights+;
 #endif
 
-#pragma link C++ class AlidNdPtTrackDumpTask+;
-#pragma link C++ class AliPtResolAnalysis+;
-#pragma link C++ class AliPtResolAnalysisPbPb+;
-#pragma link C++ class AlimPtAnalysis+;
-#pragma link C++ class AlimPtMatrix+;
-#pragma link C++ class AlimPtMatrixZDC+;
 #pragma link C++ class AliMCSpectraWeightsAnalysisTask+;
 #pragma link C++ class AliAnalysisTaskSEITSsaSpectra+;
 #pragma link C++ class AliAnalysisTaskQAHighPtDeDxTest+;

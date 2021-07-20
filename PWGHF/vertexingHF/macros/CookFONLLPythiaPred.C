@@ -33,13 +33,15 @@ enum { // options for re-weight
   kAccurate // correct each b-hadron contribution indipendently (modify also the pT dependence)
 };
 
-void CookFONLLPythiaPred(std::string inFileNameMin = "DfromB_FONLLminPythia8_FFptDepmin_yDcut_pp13TeV_PDG2020.root", // min FONLL predictions
-                         std::string inFileNameCent = "DfromB_FONLLcentPythia8_FFptDepcent_yDcut_pp13TeV_PDG2020.root", // central FONLL predictions
-                         std::string inFileNameMax = "DfromB_FONLLmaxPythia8_FFptDepmax_yDcut_pp13TeV_PDG2020.root",  // max FONLL predictions
-                         std::string outFileName = "DmesonLcPredictions_13TeV_y05_FFptDepLHCb_BRpythia8_PDG2020.root",
+void CookFONLLPythiaPred(std::string inFileNameMin = "fonll/feeddown/DfromB_FONLLminPythia8_FFppbar_yDcut_pp502TeV_PDG2020.root", // min FONLL predictions
+                         std::string inFileNameCent = "fonll/feeddown/DfromB_FONLLcentPythia8_FFppbar_yDcut_pp502TeV_PDG2020.root", // central FONLL predictions
+                         std::string inFileNameMax = "fonll/feeddown/DfromB_FONLLmaxPythia8_FFppbar_yDcut_pp502TeV_PDG2020.root",  // max FONLL predictions
+                         std::string outFileName = "fonll/feeddown/DmesonLcPredictions_502TeV_y05_FFee_BRpythia8_SepContr_PDG2020.root",
                          int brOpt = kBROriginal,
-                         int ffOpt = kFFOriginal,
-                         int wOpt = kAccurate) {
+                         int ffOpt = kFFee,
+                         int wOpt = kAccurate,
+                         double scale = 1. // value to scale all the FD predictions
+                         ) {
 
   std::array<std::string, 3> inFileNames = {inFileNameMin, inFileNameCent, inFileNameMax};
   std::array<std::string, 3> edgeNames = {"min", "central", "max"};
@@ -72,7 +74,7 @@ void CookFONLLPythiaPred(std::string inFileNameMin = "DfromB_FONLLminPythia8_FFp
                                                                              }};
   std::array<double, numMothers> ppbarBFF = {0.344, 0.344, 0.115, 0.198}; // (B0, B+, Bs, Lb) from PDG (2020)
   std::array<double, numMothers> eeBFF = {0.408, 0.408, 0.100, 0.084}; // (B0, B+, Bs, Lb) from PDG (2020)
-  std::array<double, numDaughters> decayBR = {0.03950, 0.0938, 0.0224, 0.0628, 0.03950*0.677, 0.0159}; // (D0, D+, Ds, Lc->pKpi, D*+, LC->K0sp) from PDG (2020)
+  std::array<double, numDaughters> decayBR = {0.03950, 0.0938, 0.0224, 0.0628, 0.03950*0.677, 0.0159*0.692}; // (D0, D+, Ds, Lc->pKpi, D*+, LC->K0sp) from PDG (2020)
   std::array<std::array<double, numMothers>, numDaughters> origBR = {};
   std::array<double, numMothers> origBFF = {};
 
@@ -87,8 +89,7 @@ void CookFONLLPythiaPred(std::string inFileNameMin = "DfromB_FONLLminPythia8_FFp
       origBFF[iMother] = hFFBeauty->GetBinContent(iMother + 1);
     }
 
-    double origBFFsum = 0.;
-    std::accumulate(origBFF.begin(), origBFF.end(), origBFFsum);
+    double origBFFsum = std::accumulate(origBFF.begin(), origBFF.end(), 0.f);
     if(ffOpt != kFFOriginal && origBFFsum == 0) {
       std::cerr << "ERROR: only original FF can be set if pT-dependent LHCb parametrisation used in the simulation! Exit" << std::endl;
       return;
@@ -284,10 +285,10 @@ void CookFONLLPythiaPred(std::string inFileNameMin = "DfromB_FONLLminPythia8_FFp
       hDauPromptPred->Write();
 
       // non-prompt predictions
-      hDauFDPred->Scale(decayBR[iDau] / 1.e-6);
-      hDauFDPredFromNonStrangeB->Scale(decayBR[iDau] / 1.e-6);
-      hDauFDPredFromBs->Scale(decayBR[iDau] / 1.e-6);
-      hDauFDPredFromLb->Scale(decayBR[iDau] / 1.e-6);
+      hDauFDPred->Scale(decayBR[iDau] * scale / 1.e-6);
+      hDauFDPredFromNonStrangeB->Scale(decayBR[iDau] * scale / 1.e-6);
+      hDauFDPredFromBs->Scale(decayBR[iDau] * scale / 1.e-6);
+      hDauFDPredFromLb->Scale(decayBR[iDau] * scale / 1.e-6);
       std::string nameFD = "h" + predTag[iDau] + "fromBpred_" + edgeNames[iFile] + "_corr";
       std::string titleFD = predTag[iDau] + " from B " + edgeNames[iFile] + " value prediction (with BR and B->D correction)";
       hDauFDPred->SetName(nameFD.data());

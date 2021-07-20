@@ -27,8 +27,12 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
     void SetMaxPt(Float_t MaxPt = 8.0){fMaxPt = MaxPt;}
     void SetResolType(Int_t ResolType = 2){fResolType = ResolType;}
     void SetALTweight(Int_t ALTweightType = 1){fALTweightType = ALTweightType;}
-    void SetResFileName(TString name){ fResolDataSetName = name; }
+    void SetResFileName(TString name);
     void SetResFileLocal(Bool_t localres) {fLocalRes = localres; }
+    void SetEffFileName(TString name);
+
+    TH1F *GetEffHisto() {return fhwEffpT;}
+ 
 
     // For resolution smearing (from Theos LightFlavorGenerator)
     TObjArray       *fArr;
@@ -48,7 +52,7 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
     Int_t*                fParticleList;              // array with particle Pdg values
     TString*              fParticleListNames;         // array with particle names
 
-    const Int_t nInputParticles = 14;
+    const Int_t nInputParticles = 17;
 
     // Event histograms
     TH1F*                 fHistNEvents;               // number of events histo
@@ -149,8 +153,11 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
     TFile*      fFile;        //! Pointer to input file
     TString     fFileNameDCA;    // Name of the input file (DCA)
     TFile*      fFileDCA;        //! Pointer to input file
-    TString     fFileNameEff;    // Name of the input file (Eff weight)
+    TString     fFileNameEff;    // Name of the input file (Eff)
+    TString     fFileNameEffLocal;    // Name of the input file (Eff)
     TFile*      fFileEff;        //! Pointer to input file
+    TString     fFileNameWM;    // Name of the input file (weight multiplicity)
+    TFile*      fFileWM;        //! Pointer to input file
     TString     fFileNameVPH;    // Name of the input file (VPH)
     TFile*      fFileVPH;        //! Pointer to input file
     TString     fResolDataSetName; //Specify multiplicity class and data set for Run 2 data
@@ -172,7 +179,7 @@ class AliAnalysisTaskLMeeCocktailMC : public AliAnalysisTaskSE {
     AliAnalysisTaskLMeeCocktailMC(const AliAnalysisTaskLMeeCocktailMC&); // Prevent copy-construction
     AliAnalysisTaskLMeeCocktailMC &operator=(const AliAnalysisTaskLMeeCocktailMC&); // Prevent assignment
 
-    ClassDef(AliAnalysisTaskLMeeCocktailMC, 2);
+    ClassDef(AliAnalysisTaskLMeeCocktailMC, 3);
 };
 
 #endif

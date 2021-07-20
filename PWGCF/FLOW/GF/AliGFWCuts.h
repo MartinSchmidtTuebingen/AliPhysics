@@ -12,16 +12,22 @@ Extention of Generic Flow (https://arxiv.org/abs/1312.3572)
 #include "TString.h"
 #include "AliESDtrack.h"
 #include "AliESDtrackCuts.h"
+#include "AliESDtrack.h"
+#include "AliESDEvent.h"
+
 class AliGFWCuts {
  public:
   AliGFWCuts();
   ~AliGFWCuts();
   Int_t AcceptParticle(AliVParticle*, Int_t BitShift=0, Double_t ptLow=-1, Double_t ptHigh=-1);
   Int_t AcceptVertex(AliAODEvent*, Int_t BitShift=0);
+  Int_t AcceptVertex(AliESDEvent*, Int_t BitShift=0);
   Int_t AcceptTrack(AliAODTrack*, Double_t*, const Int_t &BitShift=0, const Bool_t &lDisableDCAxyCheck=kTRUE);
+  Int_t AcceptTrack(AliESDtrack*, Double_t*, const Int_t &BitShift=0, const Bool_t &lDisableDCAxyCheck=kTRUE);
   void ResetCuts();
   void PrintSetup();
   void SetupCuts(Int_t);
+  void SetEta(Double_t newval) { fEta = newval; };
   TString *GetFlagDescription(Int_t flag);
   const char *GetSystPF() { return Form("%s",fSystFlag?Form("_SystFlag%i_",fSystFlag):""); };
   Int_t GetSystFlagIndex() { return fSystFlag; };
@@ -34,6 +40,8 @@ class AliGFWCuts {
   Double_t fEta;
   static const Int_t fNTrackFlags;
   static const Int_t fNEventFlags;
+  static AliESDtrackCuts *fTCFB32;
+  static AliESDtrackCuts *fTCFB64;
   Bool_t NeedsExtraWeight() { return fRequiresExtraWeight; };
  private:
   Bool_t fRequiresExtraWeight;

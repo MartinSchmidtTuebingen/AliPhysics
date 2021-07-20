@@ -36,6 +36,7 @@
 #include <TH2.h>
 #include <TLinearBinning.h>
 #include <TLorentzVector.h>
+#include <TPDGCode.h>
 #include <TRandom.h>
 
 
@@ -350,7 +351,7 @@ void AliAnalysisTaskEmcalSoftDropResponse::UserCreateOutputObjects()
       fHistManager.CreateTH2(Form("hThetagClosureTruthNoRespPartAllFine_%d", cent), Form("Thetag truth at part. level of all jets for closure test (no-response sample), %d centrality bin", cent), binEdgesThetag.GetSize() - 1, binEdgesThetag.GetArray(), binEdgesPtFine.GetSize() -1 , binEdgesPtFine.GetArray());
       fHistManager.CreateTH2(Form("hThetagClosureTruthRespPartAllFine_%d", cent), Form("Thetag truth at part. level of all jets for closure test (response sample), %d centrality bin", cent), binEdgesThetag.GetSize() - 1, binEdgesThetag.GetArray(), binEdgesPtFine.GetSize() -1 , binEdgesPtFine.GetArray());
       fHistManager.CreateTH2(Form("hNsdClosureTruthNoRespPartAllFine_%d", cent), Form("Nsd truth at part. level of all jets for closure test (no-response sample), %d centrality bin", cent), binEdgesNsd.GetSize() - 1, binEdgesNsd.GetArray(), binEdgesPtFine.GetSize() -1 , binEdgesPtFine.GetArray());
-      fHistManager.CreateTH2(Form("hNsdClosureTruthRespPartAllFine", cent), Form("Nsd truth at part. level of all jets for closure test (response sample), %d centrality bin", cent), binEdgesNsd.GetSize() - 1, binEdgesNsd.GetArray(), binEdgesPtFine.GetSize() -1 , binEdgesPtFine.GetArray());
+      fHistManager.CreateTH2(Form("hNsdClosureTruthRespPartAllFine_%d", cent), Form("Nsd truth at part. level of all jets for closure test (response sample), %d centrality bin", cent), binEdgesNsd.GetSize() - 1, binEdgesNsd.GetArray(), binEdgesPtFine.GetSize() -1 , binEdgesPtFine.GetArray());
 
       if(fFillPlotsResiduals) {
         // Residuals vs. pt,part
@@ -617,6 +618,9 @@ void AliAnalysisTaskEmcalSoftDropResponse::UserCreateOutputObjects()
     fHistManager.CreateTH2("hSDUsedChargedDRMaxDet", "#DeltaR vs. p_{t,jet} for tracks used in SD (det. level); p_{t,jet}; #DeltaR", 350, 0., 350., 100, 0., 1.);
     fHistManager.CreateTH2("hSDUsedNeutralDRMaxPart", "#DeltaR vs. p_{t,jet} for clusters used in SD (part. level); p_{t,jet}; #DeltaR", 350, 0., 350., 100, 0., 1.);
     fHistManager.CreateTH2("hSDUsedNeutralDRMaxDet", "#DeltaR vs. p_{t,jet} for clusters used in SD (det. level); p_{t,jet}; #DeltaR", 350, 0., 350., 100, 0., 1.);
+    fHistManager.CreateTH1("hPartConstPi0", "Particle-level consitutent spectrum of pi0 constituents", 200, 0., 200.);
+    fHistManager.CreateTH1("hPartConstK0s", "Particle-level consitutent spectrum of K0 constituents", 200, 0., 200.);
+    fHistManager.CreateTH1("hPartConstPhoton", "Particle-level consitutent spectrum of photon constituents", 200, 0., 200.);
     // Cluster constituent QA
     fHistManager.CreateTH2("hSDUsedClusterTimeVsE", "Cluster time vs. energy; time (ns); E (GeV)", 1200, -600, 600, 200, 0., 200);
     fHistManager.CreateTH2("hSDUsedClusterTimeVsEFine", "Cluster time vs. energy (main region); time (ns); E (GeV)", 1000, -100, 100, 200, 0., 200);
@@ -706,8 +710,8 @@ bool AliAnalysisTaskEmcalSoftDropResponse::Run()
   };
   AliJetContainer *partLevelJets = this->GetJetContainer(fNamePartLevelJetContainer),
                   *detLevelJets = GetJetContainer(fNameDetLevelJetContainer);
-  AliClusterContainer *clusters = GetClusterContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::ClusterContainerNameFactory(fInputEvent->IsA() == AliAODEvent::Class()));
-  AliTrackContainer *tracks = GetTrackContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::TrackContainerNameFactory(fInputEvent->IsA() == AliAODEvent::Class()));
+  AliClusterContainer *clusters = GetClusterContainer(AliEmcalAnalysisFactory::ClusterContainerNameFactory(fInputEvent->IsA() == AliAODEvent::Class()));
+  AliTrackContainer *tracks = GetTrackContainer(AliEmcalAnalysisFactory::TrackContainerNameFactory(fInputEvent->IsA() == AliAODEvent::Class()));
   AliParticleContainer *particles = GetParticleContainer(fNameMCParticles.Data());
   double Rjet = detLevelJets->GetJetRadius();
   if (!(partLevelJets || detLevelJets))
@@ -797,7 +801,7 @@ bool AliAnalysisTaskEmcalSoftDropResponse::Run()
       AliDebugStream(1) << "No part jet" << std::endl;
     }
 
-    SoftdropResults softdropDet, softdropPart;
+    SoftdropResults softdropDet = {0., 0., 0., 0., 0., 0}, softdropPart = {0., 0., 0., 0., 0., 0};
     std::vector<SoftdropResults> splittingsDet, splittingsPart;
     try {
       softdropDet = MakeSoftdrop(*detjet, detLevelJets->GetJetRadius(),false, sdsettings, (AliVCluster::VCluUserDefEnergy_t)clusters->GetDefaultClusterEnergy(), fVertex, fDropMass0Jets);
@@ -1279,6 +1283,15 @@ bool AliAnalysisTaskEmcalSoftDropResponse::Run()
   // this is of relevance for the jet finding efficiency
   if(fForceBeamType == kpp){
     for(auto partjet : partLevelJets->accepted()){
+      for(auto itrk = 0; itrk < partjet->GetNumberOfTracks(); itrk++) {
+        auto constituent = partjet->Track(itrk);
+        switch(TMath::Abs(constituent->PdgCode())) {
+        case kPi0: fHistManager.FillTH1("hPartConstPi0", constituent->Pt()); break;
+        case kK0Short: fHistManager.FillTH1("hPartConstK0s", constituent->Pt()); break;
+        case kGamma: fHistManager.FillTH1("hPartConstPhoton", constituent->Pt()); break;
+        default: break;
+        };
+      }
       SoftdropResults softdropPart, softdropDet;
       std::vector<SoftdropResults> splittingsPart, splittingsDet;
       try{
@@ -1293,7 +1306,6 @@ bool AliAnalysisTaskEmcalSoftDropResponse::Run()
              thetagpart = untaggedEfficinency ? -0.05 : softdropPart.fRg/Rjet,
              nsdpart = untaggedEfficinency ? -1. : double(splittingsPart.size());
       // Fill 2D part. level distributions
-      bool untagged = softdropPart.fZg < fZcut;
       fHistManager.FillTH2("hZgPartLevelFine", zgpart, partjet->Pt());
       fHistManager.FillTH2("hRgPartLevelFine", rgpart , partjet->Pt());
       fHistManager.FillTH2("hNsdPartLevelFine", nsdpart, partjet->Pt());
@@ -1416,7 +1428,7 @@ void AliAnalysisTaskEmcalSoftDropResponse::FillJetQA(const AliEmcalJet &jet, boo
       auto cluster = jet.Cluster(icl);
       TLorentzVector clustervec;
       cluster->GetMomentum(clustervec, fVertex, energydef);
-      TVector3 clustervec3(clustervec.Pt(), clustervec.Eta(), clustervec.Phi());
+      TVector3 clustervec3(clustervec.Px(), clustervec.Py(), clustervec.Pz());
       fHistManager.FillTH2("hSDUsedNeutralPtjvPtcDet", jet.Pt(), clustervec.Pt());
       fHistManager.FillTH2("hSDUsedNeutralEtaPhiDet", clustervec.Eta(), TVector2::Phi_0_2pi(clustervec.Phi()));
       fHistManager.FillTH2("hSDUsedNeutralDRDet", jet.Pt(), jetvec.DeltaR(clustervec3));
@@ -1448,9 +1460,9 @@ void AliAnalysisTaskEmcalSoftDropResponse::FillJetQA(const AliEmcalJet &jet, boo
   }
 
   if(hasMaxNeutral) {
-    fHistManager.FillTH2("hSDUsedNeutralPtjvPcMaxPart", jet.Pt(), maxneutral.Pt());
-    fHistManager.FillTH2("hSDUsedNeutralEtaPhiMaxPart", maxneutral.Eta(), TVector2::Phi_0_2pi(maxneutral.Phi()));
-    fHistManager.FillTH2("hSDUsedNeutralDRMaxPart", jet.Pt(), jetvec.DeltaR(maxneutral));
+    fHistManager.FillTH2(Form("hSDUsedNeutralPtjvPcMax%s", tag.data()), jet.Pt(), maxneutral.Pt());
+    fHistManager.FillTH2(Form("hSDUsedNeutralEtaPhiMax%s", tag.data()), maxneutral.Eta(), TVector2::Phi_0_2pi(maxneutral.Phi()));
+    fHistManager.FillTH2(Form("hSDUsedNeutralDRMax%s", tag.data()), jet.Pt(), jetvec.DeltaR(maxneutral));
   }
 }
 
@@ -1567,7 +1579,7 @@ AliAnalysisTaskEmcalSoftDropResponse *AliAnalysisTaskEmcalSoftDropResponse::AddT
   AliTrackContainer *tracks(nullptr);
   if ((jettype == AliJetContainer::kChargedJet) || (jettype == AliJetContainer::kFullJet))
   {
-    tracks = responsemaker->AddTrackContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::TrackContainerNameFactory(isAOD));
+    tracks = responsemaker->AddTrackContainer(AliEmcalAnalysisFactory::TrackContainerNameFactory(isAOD));
     std::cout << "Track container name: " << tracks->GetName() << std::endl;
     //if embedding need to specify that the tracks are embedded
     if (ifembed)
@@ -1578,7 +1590,7 @@ AliAnalysisTaskEmcalSoftDropResponse *AliAnalysisTaskEmcalSoftDropResponse::AddT
   if ((jettype == AliJetContainer::kFullJet) || (jettype == AliJetContainer::kNeutralJet))
   {
     std::cout << "Using full or neutral jets ..." << std::endl;
-    clusters = responsemaker->AddClusterContainer(EMCalTriggerPtAnalysis::AliEmcalAnalysisFactory::ClusterContainerNameFactory(isAOD));
+    clusters = responsemaker->AddClusterContainer(AliEmcalAnalysisFactory::ClusterContainerNameFactory(isAOD));
     std::cout << "Cluster container name: " << clusters->GetName() << std::endl;
     // 300 MeV E-cut
     switch(energydef) {

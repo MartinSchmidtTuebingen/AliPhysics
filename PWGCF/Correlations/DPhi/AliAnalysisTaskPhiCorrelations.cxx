@@ -179,6 +179,8 @@ fCutOnK0sV(-1),
 fRejectResonanceDaughters(-1),
 fFillOnlyStep0(kFALSE),
 fSkipStep6(kFALSE),
+fSkipStep8(kFALSE),
+fSkipStep9(kTRUE),
 fRejectCentralityOutliers(kFALSE),
 fRejectZeroTrackEvents(kFALSE),
 fRemoveWeakDecays(kFALSE),
@@ -975,16 +977,21 @@ void  AliAnalysisTaskPhiCorrelations::AnalyseCorrectionMode()
       if (!fSkipStep6)
         fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepReconstructed, tracks, tracksCorrelate, weight);
 
-      // two track cut, STEP 8
-      if (fTwoTrackEfficiencyCut > 0)
+      // two track cut, STEP 8 (fill it if at least one two-track cut is on, but skip it on request)
+      Bool_t fillStep8 = (!fSkipStep8) && ((fTwoTrackEfficiencyCut > 0) || (fCutConversionsV > 0) || (fCutOnK0sV > 0) ||
+                                           (fCutOnLambdaV > 0) || (fCutOnPhiV > 0) || (fCutOnRhoV > 0) || (fCutOnCustomV > 0));
+      if (fillStep8)
         fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy, tracks, tracksCorrelate, weight, kTRUE, kTRUE, bSign, fTwoTrackEfficiencyCut);
 
-      // apply correction efficiency, STEP 10
+      // apply correction efficiency, STEP 9 and 10
       if (fEfficiencyCorrectionTriggers || fEfficiencyCorrectionAssociated) {
-        // with or without two track efficiency depending on if fTwoTrackEfficiencyCut is set
-        Bool_t twoTrackCut = (fTwoTrackEfficiencyCut > 0);
 
-        fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepCorrected, tracks, tracksCorrelate, weight, kTRUE, twoTrackCut, bSign, fTwoTrackEfficiencyCut, kTRUE);
+        // all two track cuts disabled, STEP 9
+        if (!fSkipStep9)
+          fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy2, tracks, tracksCorrelate, weight, kTRUE, kFALSE, 0, -1, kTRUE);
+
+        // STEP 10
+        fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepCorrected, tracks, tracksCorrelate, weight, kTRUE, kTRUE, bSign, fTwoTrackEfficiencyCut, kTRUE);
       }
 
       // mixed event
@@ -1000,15 +1007,18 @@ void  AliAnalysisTaskPhiCorrelations::AnalyseCorrectionMode()
                 fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepReconstructed, tracks, pool2->GetEvent(jMix), 1.0 / pool2->GetCurrentNEvents(), (jMix == 0));
 
               // two track cut, STEP 8
-              if (fTwoTrackEfficiencyCut > 0)
+              if (fillStep8)
                 fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy, tracks, pool2->GetEvent(jMix), 1.0 / pool2->GetCurrentNEvents(), (jMix == 0), kTRUE, bSign, fTwoTrackEfficiencyCut);
 
-              // apply correction efficiency, STEP 10
+              // apply correction efficiency, STEP 9 and 10
               if (fEfficiencyCorrectionTriggers || fEfficiencyCorrectionAssociated) {
-                // with or without two track efficiency depending on if fTwoTrackEfficiencyCut is set
-                Bool_t twoTrackCut = (fTwoTrackEfficiencyCut > 0);
 
-                fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepCorrected, tracks, pool2->GetEvent(jMix), 1.0 / pool2->GetCurrentNEvents(), (jMix == 0), twoTrackCut, bSign, fTwoTrackEfficiencyCut, kTRUE);
+                // all two track cuts disabled, STEP 9
+                if (!fSkipStep9)
+                  fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy2, tracks, pool2->GetEvent(jMix), 1.0 / pool2->GetCurrentNEvents(), (jMix == 0), kFALSE, 0, -1, kTRUE);
+
+                // STEP 10
+                fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepCorrected, tracks, pool2->GetEvent(jMix), 1.0 / pool2->GetCurrentNEvents(), (jMix == 0), kTRUE, bSign, fTwoTrackEfficiencyCut, kTRUE);
               }
             }
           }
@@ -1318,15 +1328,23 @@ void AliAnalysisTaskPhiCorrelations::AnalyseDataMode()
   if (fFillpT)
     weight = -1;
 
+  // Flag to fill step 8 if there are any two track cuts turned on, skip it on request
+  Bool_t fillStep8 = (!fSkipStep8) && ((fTwoTrackEfficiencyCut > 0) || (fCutConversionsV > 0) || (fCutOnK0sV > 0) ||
+                                       (fCutOnLambdaV > 0) || (fCutOnPhiV > 0) || (fCutOnRhoV > 0) || (fCutOnCustomV > 0));
+
   // Fill containers at STEP 6 (reconstructed)
   if (centrality >= 0) {
     if (!fSkipStep6)
-      fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepReconstructed, tracks, tracksCorrelate, weight, kTRUE, kFALSE, 0, 0.02, kTRUE);
+      fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepReconstructed, tracks, tracksCorrelate, weight, kTRUE, kTRUE, 0, -1, kTRUE);
 
     ((TH1F*) fListOfHistos->FindObject("eventStat"))->Fill(1);
 
-    if (fTwoTrackEfficiencyCut > 0)
+    if (fillStep8)
       fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy, tracks, tracksCorrelate, weight, kTRUE, kTRUE, bSign, fTwoTrackEfficiencyCut, kTRUE);
+
+    if (!fSkipStep9)
+      fHistos->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy2, tracks, tracksCorrelate, weight, kTRUE, kFALSE, 0, -1, kTRUE);
+
   }
 
   // create a list of reduced objects. This speeds up processing and reduces memory consumption for the event pool
@@ -1374,10 +1392,14 @@ void AliAnalysisTaskPhiCorrelations::AnalyseDataMode()
           TObjArray* bgTracks = pool->GetEvent(jMix);
 
           if (!fSkipStep6)
-            fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepReconstructed, tracksClone, bgTracks, 1.0 / nMix, (jMix == 0), kFALSE, 0, 0.02, kTRUE);
+            fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepReconstructed, tracksClone, bgTracks, 1.0 / nMix, (jMix == 0), kTRUE, 0, -1, kTRUE);
 
-          if (fTwoTrackEfficiencyCut > 0)
+          if (fillStep8)
             fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy, tracksClone, bgTracks, 1.0 / nMix, (jMix == 0), kTRUE, bSign, fTwoTrackEfficiencyCut, kTRUE);
+
+          if (!fSkipStep9)
+            fHistosMixed->FillCorrelations(centrality, zVtx, AliUEHist::kCFStepBiasStudy2, tracksClone, bgTracks, 1.0 / nMix, (jMix == 0), kFALSE, 0, -1, kTRUE);
+
         }
       }
 

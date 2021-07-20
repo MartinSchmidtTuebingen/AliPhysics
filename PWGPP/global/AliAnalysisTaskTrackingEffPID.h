@@ -49,6 +49,8 @@ public:
   void SetTrackletMultiplicityEstimator(){ fMultEstimator=0;}
   void SetVertexContribMultiplicityEstimator(){ fMultEstimator=1;}
   void SetTracksMultiplicityEstimator(){ fMultEstimator=2;}
+  void SetTPCTracksMultiplicityEstimator(){ fMultEstimator=3;}
+  void SetTPCClustersMultiplicityEstimator(){ fMultEstimator=4;}
 
   void SetCollisionSystem(TString collsy){
     collsy.ToLower();
@@ -94,7 +96,7 @@ public:
   void KeepOnlyUnderlyingEventParticles(bool opt){fKeepOnlyUE=opt;}
   TString GetGenerator(int label, TList *lh);
   bool IsInjectedParticle(int lab, TList *lh);
-  double GetLocalTrackDens(double eta, double phi);
+  double GetLocalTrackDens(TNtuple* trEtaPhiMap, double eta, double phi) const;
   AliEventCuts  fEventCut;
 
 

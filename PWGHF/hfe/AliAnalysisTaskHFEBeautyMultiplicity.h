@@ -7,7 +7,10 @@
 
 #include "AliAnalysisTaskSE.h"
 #include "AliPIDResponse.h"
+#include "TProfile.h"
+
 class TH1F;
+class TGraphErrors;
 class AliAODEvent;
 class AliMultSelection;
 class AliAODMCParticle;
@@ -32,18 +35,45 @@ class AliAnalysisTaskHFEBeautyMultiplicity : public AliAnalysisTaskSE
         //---- called for end of analysis ----//
         virtual void            Terminate(Option_t* option);
 
+
+
         void SetAODAnalysis()   { SetBit(kAODanalysis, kTRUE); };
         void SetESDAnalysis()   { SetBit(kAODanalysis, kFALSE);};
         Bool_t IsAODanalysis()  const { return TestBit(kAODanalysis); };
 
         void SetCentralityEstimator(const char *estimator) {fCentralityEstimator = estimator; };
-    
+
+
+	void SetMultiProfileLHC16qt(TProfile *hprof)    { fMultiEstimatorAvg[0] = new TProfile(*hprof); }
+	void SetMultiProfileLHC16qt_MC(TProfile *hprof) { fMultiEstimatorAvg[1] = new TProfile(*hprof); }
+
+	TProfile* GetEstimatorHistogram(const AliAODEvent *fAOD, Bool_t iData);
+	Double_t Nref;
+	Double_t MinNtrklet;
+	Double_t MaxNtrklet;
+
+	void SetNref(Double_t nref) { Nref = nref; };
+	void SetNtrkletMin(Double_t minNtrklet) { MinNtrklet = minNtrklet; };
+	void SetNtrkletMax(Double_t maxNtrklet) { MaxNtrklet = maxNtrklet; };
+	void SetWeightNtrklet(TH1D* hWeight){ fweightNtrkl = new TH1D(*hWeight); };
+
+	void SetMCtype(Bool_t iMCtype){ iGPMC = iMCtype; };
+
+	void SetWeightDmeson(TGraphErrors* WeightPt_Dmeson){ pTWeight_D = WeightPt_Dmeson; };
+	void SetWeightLc(TGraphErrors* WeightPt_Lc){ pTWeight_Lc = WeightPt_Lc; };
+	//void SetWeightBmeson(TF1* WeightPt_Bmeson){ pTWeight_B = WeightPt_Bmeson; };
+	//void SetWeightPi0(TF1* WeightPt_Pi0){ pTWeight_Pi0 = WeightPt_Pi0; };
+	//void SetWeightEta(TF1* WeightPt_Eta){ pTWeight_Eta = WeightPt_Eta; };
+
+
+
         //---- MC analysis ----//
         virtual void            FindMother(AliAODMCParticle* part, int &label, int &pid, double &ptmom);
         Bool_t                  IsPdecay(int mpid);
         Bool_t                  IsDdecay(int mpid);
         Bool_t                  IsBdecay(int mpid);
         virtual void            CheckMCgen(AliAODMCHeader* fMCheader,Double_t CutEta);
+
     
     private:
         enum{
@@ -70,7 +100,13 @@ class AliAnalysisTaskHFEBeautyMultiplicity : public AliAnalysisTaskSE
         TH1F* fVtxZ_2;                // Zvertex position after event cut
         TH1F* fVtxX;                  // Xvertex position
         TH1F* fVtxY;                  // Yvertex position
+
         TH2F* fVtxCorrelation;        // Primary Zvertex vs. SPD Zvertex
+	TH2F* fNcont;		      // Number of contribution
+	
+    	TH2F* fZvtx_Ntrklet;	      // Z vertex vs No. of tracklets
+    	TH2F* fZvtx_Ntrklet_Corr;     // Z vertex vs No. of tracklets (corrected)
+
 
         TH2F* fEMCClsEtaPhi;          // EMCal Clusters (Eta and Phi)
         TH2F* fHistNCells;            // No of EMCal Cells in a cluster
@@ -101,9 +137,8 @@ class AliAnalysisTaskHFEBeautyMultiplicity : public AliAnalysisTaskSE
         TH2F* fClsEtaPhiAftMatch;     // cluster eta&phi (after track matching)
         TH2F* fClsEtaPhiAftMatchEMCin;// cluster eta&phi (after track matching inside EMCal)
         TH2F* fClsEtaPhiAftMatchEMCout;// cluster eta&phi (after track matching outside EMCal)
-        TH1F* fHistEMCTrkMatch_Eta;   // distance of EMCal cluster to its closest track (Eta)
-        TH1F* fHistEMCTrkMatch_Phi;   // distance of EMCal cluster to its closest track (Phi)
-        TH2F* fEMCTrkMatch_EtaPhi;
+        TH2F* fEMCTrkMatch_EtaPhi;    // EMCAL track matching Eta&Phi difference
+        TH2F* fEMCTrkMatch_EtaPhi_AfterCut;
 
 	
     	TH1F* fTrkPt_2;		      // track pT (after track cut)
@@ -120,6 +155,7 @@ class AliAnalysisTaskHFEBeautyMultiplicity : public AliAnalysisTaskSE
         TH2F* fM02_2;
         TH2F* fM20_2;
         TH1F* fNtracks;
+    	TH2F* fTrkEtaPhi_AfterCut;  // Track Eta vs. Phi (after cut)_
     
         TH1F* fHistEopAll;          // E/p (all)
         TH2F* fEopElectron1;        // pT vs E/p (electron)
@@ -150,8 +186,10 @@ class AliAnalysisTaskHFEBeautyMultiplicity : public AliAnalysisTaskSE
         TH1F* fEopHadron2;          // hadron pT (tight)
 
 	TH2F* fHistConv_R;
+    	TH2F* fElectronEtaPhi;      // eta vs. phi (electron)
+    	TH2F* fHadronEtaPhi;	    // eta vs. phi (hadron)
         
-    
+    	TH1F* fHist_Tracklet;
     
     
         //---- MC output ----//
@@ -161,68 +199,110 @@ class AliAnalysisTaskHFEBeautyMultiplicity : public AliAnalysisTaskSE
         TClonesArray*       fMCarray;               // MC array
         AliAODMCHeader*     fMCheader;
     
-        TH1F*               fHistPho_Reco0;
-        TH1F*               fHistPho_Reco1;
-        TH1F*               fHistPho_Reco2;
+        TH1F*	fHistPho_Reco0;
+        TH1F*	fHistPho_Reco1;
+        TH1F*	fHistPho_Reco2;
+        TH1F*	fHistPho_Reco0_Pi0;
+        TH1F*	fHistPho_Reco1_Pi0;
+        TH1F*	fHistPho_Reco2_Pi0;
+        TH1F*	fHistPho_Reco0_Eta;
+        TH1F*	fHistPho_Reco1_Eta;
+        TH1F*	fHistPho_Reco2_Eta;
     
-        Int_t               NembMCpi0;
-        Int_t               NembMCeta;
-        Int_t               NpureMCproc;
-        Int_t               NpureMC;
-        Int_t               Nch;
-	Bool_t		    iBevt;
-	TH1F*		    fNoB;
-	TH1F*		    fNoD;
+        Int_t	NembMCpi0;
+        Int_t	NembMCeta;
+        Int_t	NpureMCproc;
+        Int_t	NpureMC;
+        Int_t	Nch;
+	Int_t	Nmc;
+	Bool_t	iGPMC;
+	Bool_t	iBevt;
+	TH1F*	fNoB;
+	TH1F*	fNoD;
     
-        TH1F*               fCheckEtaMC;
-        TH2F*               fHistMCorg_Pi0;
-        TH2F*               fHistMCorg_Eta;
-        TH1F*               fHistMCorg_D;
-        TH1F*               fHistMCorg_BD;
-        TH1F*               fHistMCorg_B;
-        TH1F*               fHistMCorg_Lc;
-        TH2F*               fPt_Btoe;
-        TH1F*               fHistPt_HFE_MC_B;
-        TH1F*               fHistPt_HFE_MC_D;
-        TH1F*               fHistPt_HFE_MC_Lc;
+        TH1F*	fCheckEtaMC;
+        TH2F*	fHistMCorg_Pi0;
+        TH2F*	fHistMCorg_Eta;
+        TH1F*	fHistMCorg_D;
+        TH1F*	fHistMCorg_BD;
+        TH1F*	fHistMCorg_B;
+        TH1F*	fHistMCorg_Lc;
+        TH2F*	fPt_Btoe;
+        TH1F*	fHistPt_HFE_MC_B;
+        TH1F*	fHistPt_HFE_MC_D;
+        TH1F*	fHistPt_HFE_MC_Lc;
 
-	TH2F*		    fDCAxy_MC_B;
-	TH2F*		    fDCAxy_MC_D;
-	TH2F*		    fDCAxy_MC_Dpm;
-	TH2F*		    fDCAxy_MC_D0;
-	TH2F*		    fDCAxy_MC_Ds;
-	TH2F*		    fDCAxy_MC_Lc;
+	TH2F*	fDCAxy_MC_B;
+	TH2F*	fDCAxy_MC_D;
+	TH2F*	fDCAxy_MC_Dpm;
+	TH2F*	fDCAxy_MC_D0;
+	TH2F*	fDCAxy_MC_Ds;
+	TH2F*	fDCAxy_MC_Lc;
 
-	TH2F*		    fDCAxy_MC_ele;
-	TH2F*		    fDCAxy_MC_Phot;
+	TH2F*	fDCAxy_MC_ele;
+	TH2F*	fDCAxy_MC_Phot;
     	
-	TH1F*		    fHistPt_B_TrkCut0;
-	TH1F*		    fHistPt_B_TrkCut1;
-	TH1F*		    fHistPt_B_TrkCut2;
-	TH1F*		    fHistPt_B_TrkCut3;
-	TH1F*		    fHistPt_B_TrkCut4;
-	TH1F*		    fHistPt_B_TrkCut5;
-	TH1F*		    fHistPt_B_TrkCut6;
-	TH1F*		    fHistPt_B_TrkCut7;
-	TH1F*		    fHistPt_B_TrkCut8;
-	TH1F*		    fHistPt_B_TrkCut9;
+	TH1F*	fHistPt_B_TrkCut0;
+	TH1F*	fHistPt_B_TrkCut1;
+	TH1F*	fHistPt_B_TrkCut2;
+	TH1F*	fHistPt_B_TrkCut3;
+	TH1F*	fHistPt_B_TrkCut4;
+	TH1F*	fHistPt_B_TrkCut5;
+	TH1F*	fHistPt_B_TrkCut6;
+	TH1F*	fHistPt_B_TrkCut7;
+	TH1F*	fHistPt_B_TrkCut8;
+	TH1F*	fHistPt_B_TrkCut9;
 
-	TH1F*		    fHistPt_D_TrkCut0;
-	TH1F*		    fHistPt_D_TrkCut1;
-	TH1F*		    fHistPt_D_TrkCut2;
-	TH1F*		    fHistPt_D_TrkCut3;
-	TH1F*		    fHistPt_D_TrkCut4;
-	TH1F*		    fHistPt_D_TrkCut5;
-	TH1F*		    fHistPt_D_TrkCut6;
-	TH1F*		    fHistPt_D_TrkCut7;
-	TH1F*		    fHistPt_D_TrkCut8;
-	TH1F*		    fHistPt_D_TrkCut9;
-    
-    
+	TH1F*	fHistPt_D_TrkCut0;
+	TH1F*	fHistPt_D_TrkCut1;
+	TH1F*	fHistPt_D_TrkCut2;
+	TH1F*	fHistPt_D_TrkCut3;
+	TH1F*	fHistPt_D_TrkCut4;
+	TH1F*	fHistPt_D_TrkCut5;
+	TH1F*	fHistPt_D_TrkCut6;
+	TH1F*	fHistPt_D_TrkCut7;
+	TH1F*	fHistPt_D_TrkCut8;
+	TH1F*	fHistPt_D_TrkCut9;
+
+	TH2F*	fNtrkletNch;
+	TH2F*	fNtrkletNch_Corr;
+	TH1F*	fNtrklet_Corr;
+
+	TH2F*	fPhot_InvMass_vs_DCA;
+	TH2F*	fPhot_InvMass_vs_DCA2;
+	TH2F*	fPhot_InvMass_vs_DCA3;
+	TH2F*	fPhot_InvMass_vs_DCA_data;
+	TH2F*	fPhot_InvMass_vs_DCA_data2;
+	TH2F*	fPhot_InvMass_vs_DCA_data3;
+
+	TH1F*	fHistOrg_B;
+	TH1F*	fHistOrg_D;
+	TH1F*	fHistOrg_Dpm;
+	TH1F*	fHistOrg_D0;
+	TH1F*	fHistOrg_Ds;
+	TH1F*	fHistOrg_Lc;
+
+	TH1F*	fHistMCorg_Pi0_Enhance;
+	TH1F*	fHistMCorg_Pi0_True;
+	TH1F*	fHistMCorg_Eta_Enhance;
+	TH1F*	fHistMCorg_Eta_True;
+
+	TH2F* 	fHistPt_ele_vs_D;
+	TH2F* 	fHistPt_ele_vs_BtoD;
+	TH2F* 	fHistPt_ele_vs_B;
+	TH2F* 	fHistPt_ele_vs_Lc;
     
 
         AliAnalysisTaskHFEBeautyMultiplicity(const AliAnalysisTaskHFEBeautyMultiplicity&);                // not implemented
         AliAnalysisTaskHFEBeautyMultiplicity& operator = (const AliAnalysisTaskHFEBeautyMultiplicity&);   // not implemented
+
+	TProfile*	fMultiEstimatorAvg[2];
+	TH1D*		fweightNtrkl;
+	TGraphErrors* pTWeight_D;
+	TGraphErrors* pTWeight_Lc;
+	TF1* pTWeight_B;
+	TF1* pTWeight_Pi0;
+	TF1* pTWeight_Eta;
 
         ClassDef(AliAnalysisTaskHFEBeautyMultiplicity, 1);
 };

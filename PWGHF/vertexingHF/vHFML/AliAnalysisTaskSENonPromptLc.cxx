@@ -161,7 +161,7 @@ void AliAnalysisTaskSENonPromptLc::UserCreateOutputObjects()
 //________________________________________________________________________
 void AliAnalysisTaskSENonPromptLc::UserExec(Option_t * /*option*/)
 {
-    if (fCreateMLtree && fEnableEvtSampling && gRandom->Rndm() > fFracEvtToKeep)
+    if (fCreateMLtree && fEnableEvtSampling && ((fOptionSampling == 0 && gRandom->Rndm() > fFracEvtToKeep) || (fOptionSampling == 1 && gRandom->Rndm() < 1-fFracEvtToKeep)))
     {
         PostData(1, fOutput);
         return;
@@ -362,15 +362,15 @@ void AliAnalysisTaskSENonPromptLc::UserExec(Option_t * /*option*/)
         {
             if (fDecChannel == kLctopKpi) // Lc->pKpi
             {
-               if (fReadMC){
-               int labD[3] = {-1, -1, -1};
-               //check if resonant decay
-               int  decay=0;
-               if(labLc && partLc){
-                 decay= AliVertexingHFUtils::CheckLcpKpiDecay(arrayMC, partLc, labD);
-               }
-               (dynamic_cast<AliHFMLVarHandlerLctopKpi *>(fMLhandler))->SetIsLcpKpiRes(decay);
-               }
+                if (fReadMC)
+                {
+                    int labD[3] = {-1, -1, -1};
+                    //check if resonant decay
+                    int  decay = 0;
+                    if(labLc && partLc)
+                        decay = AliVertexingHFUtils::CheckLcpKpiDecay(arrayMC, partLc, labD);
+                    (dynamic_cast<AliHFMLVarHandlerLctopKpi *>(fMLhandler))->SetIsLcpKpiRes(decay);
+                }
                 if (isSelected == 1 || isSelected == 3) // pKpi
                 {
                     bool isSignal = false;
@@ -709,19 +709,34 @@ void AliAnalysisTaskSENonPromptLc::CreateEffSparses()
     if (fUseFinPtBinsForSparse)
         nPtBins = nPtBins * 10;
 
-    int nBinsAcc[knVarForSparseAccFD] = {nPtBins, 20, nPtBins,6};
-    double xminAcc[knVarForSparseAccFD] = {0., -1., 0.,0};
-    double xmaxAcc[knVarForSparseAccFD] = {ptLims[nPtBinsCutObj], 1., ptLims[nPtBinsCutObj],6};
+    int nBinsAccFD[knVarForSparseAccFD] = {nPtBins, 20, nPtBins, 6};
+    double xminAccFD[knVarForSparseAccFD] = {0., -1., 0., 0};
+    double xmaxAccFD[knVarForSparseAccFD] = {ptLims[nPtBinsCutObj], 1., ptLims[nPtBinsCutObj], 6};
+
+    int nBinsAcc[knVarForSparseAcc] = {nPtBins, 20, 6};
+    double xminAcc[knVarForSparseAcc] = {0., -1., 0};
+    double xmaxAcc[knVarForSparseAcc] = {ptLims[nPtBinsCutObj], 1., 6};
 
     TString label[2] = {"fromC", "fromB"};
     for (int iHist = 0; iHist < 2; iHist++)
     {
         TString titleSparse = Form("MC nSparse (%s)- %s", fFillAcceptanceLevel ? "Acc.Step" : "Gen.Acc.Step", label[iHist].Data());
-        fnSparseMC[iHist] = new THnSparseF(Form("fnSparseAcc_%s", label[iHist].Data()), titleSparse.Data(), (iHist == 0) ? knVarForSparseAcc : knVarForSparseAccFD, nBinsAcc, xminAcc, xmaxAcc);
+        fnSparseMC[iHist] = new THnSparseF(Form("fnSparseAcc_%s", label[iHist].Data()), titleSparse.Data(),
+                                           (iHist == 0) ? knVarForSparseAcc : knVarForSparseAccFD,
+                                           (iHist == 0) ? nBinsAcc : nBinsAccFD,
+                                           (iHist == 0) ? xminAcc : xminAccFD,
+                                           (iHist == 0) ? xmaxAcc : xmaxAccFD);
         fnSparseMC[iHist]->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/c)");
         fnSparseMC[iHist]->GetAxis(1)->SetTitle("#it{y}");
-        if (iHist == 1)
+        if (iHist == 0)
+        {
+            fnSparseMC[iHist]->GetAxis(2)->SetTitle("resonant channel");
+        }
+        else
+        {
             fnSparseMC[iHist]->GetAxis(2)->SetTitle("#it{p}_{T}^{B} (GeV/c)");
+            fnSparseMC[iHist]->GetAxis(3)->SetTitle("resonant channel");
+        }
         fOutput->Add(fnSparseMC[iHist]);
     }
 }
