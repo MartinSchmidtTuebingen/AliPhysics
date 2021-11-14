@@ -108,18 +108,19 @@ Bool_t DrawTrendingPIDQA(TString mergedTrendFile = "trending.root"){
   delete [] vect;
 
   TDirectoryFile* pidtr=(TDirectoryFile*)fin->Get("PIDinTr");
-  if(pidtr){
+  if(pidtr && pidtr->GetNkeys()>0){
     TCanvas* ctrpid=new TCanvas("ctrpid","PID-in-track",1000,700);
     TCanvas* ctrpidall=new TCanvas("ctrpidall","PID-in-track",1500,700);
     TLegend* leg=new TLegend(0.7,0.35,0.89,0.87);
     leg->SetHeader("PID in tracking");
     ctrpidall->Divide(3,3);
     Int_t cols[9]={kGreen+2,kGray,1,2,4,kMagenta,kOrange+1,kYellow,kCyan};
-    pidtr->ls();
+    Bool_t drawLeg=kFALSE;
     for(Int_t j=0; j<9; j++){
       TString histoname=Form("hSigP_TPC_TrackedAs_%sforMerge",AliPID::ParticleName(j));
       TH2* histo = (TH2*)pidtr->Get(histoname.Data());
       if(histo){
+	drawLeg=kTRUE;
 	TH2* histo2=(TH2*)histo->Clone(Form("%scolor",histoname.Data()));
 	histo2->SetTitle(" ");
 	histo2->SetStats(0);
@@ -136,7 +137,7 @@ Bool_t DrawTrendingPIDQA(TString mergedTrendFile = "trending.root"){
       }
     }
     ctrpid->cd();
-    leg->Draw();
+    if(drawLeg) leg->Draw();
     ctrpidall->SaveAs("TPCdEdx-PIDinTracking-9pads-AllRuns.png");
     ctrpid->SaveAs("TPCdEdx-PIDinTracking-AllRuns.png");
   }
@@ -203,6 +204,24 @@ void DoMakeUp(TH1* h, const TString det, const TString part, const TString partL
     title.ReplaceAll(" " + part, "_{" + partL + "}");
     title.ReplaceAll("p1000MeV", "#it{p} 1.0 GeV/#it{c}");
     title.ReplaceAll("p2000MeV", "#it{p} 2.0 GeV/#it{c}");
+    h->GetYaxis()->SetTitle(title);
+    ShowLimit(h);
+  }
+  if (det.EqualTo("ITS")) { //Setting histogram range for TOF plots + styling
+    if (hname.Contains("meannSigma"))
+      h->GetYaxis()->SetRangeUser(-1.2, 1.2);
+    else if (hname.Contains("signSigma"))
+      h->GetYaxis()->SetRangeUser(.5, 1.5);
+    h->GetYaxis()->SetTitleSize(0.08);
+    h->GetYaxis()->SetTitleOffset(0.5);
+    h->GetYaxis()->SetLabelSize(0.07);
+    TString title = h->GetYaxis()->GetTitle();
+    title.ReplaceAll("_", " ");
+    title.ReplaceAll("meannSigma" + det, "#mu n#sigma" + det);
+    title.ReplaceAll("signSigma" + det, "#sigma n#sigma" + det);
+    title.ReplaceAll(" " + part, "_{" + partL + "}");
+    title.ReplaceAll("p300MeV", "#it{p} 0.3 GeV/#it{c}");
+    title.ReplaceAll("p1200MeV", "#it{p} 1.2 GeV/#it{c}");
     h->GetYaxis()->SetTitle(title);
     ShowLimit(h);
   }

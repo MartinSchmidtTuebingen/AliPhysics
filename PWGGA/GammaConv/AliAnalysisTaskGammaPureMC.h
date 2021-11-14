@@ -60,14 +60,15 @@ class AliAnalysisTaskGammaPureMC : public AliAnalysisTaskSE {
     // MC functions
     void SetIsMC(Int_t isMC){fIsMC=isMC;}
     void ProcessMCParticles();
-    bool IsInPCMAcceptance(TParticle* part) const;
-    bool IsInPHOSAcceptance(TParticle* part) const;
-    bool IsInEMCalAcceptance(TParticle* part) const;
+    bool IsInPCMAcceptance(AliVParticle* part) const;
+    bool IsInPHOSAcceptance(AliVParticle* part) const;
+    bool IsInEMCalAcceptance(AliVParticle* part) const;
 
     // additional functions
     void SetLogBinningXTH1(TH1* histoRebin);
     void SetLogBinningXTH2(TH2* histoRebin);
     void SetIsK0(Int_t isK0){fIsK0 = isK0;}
+    void SetMaxPt(Double_t pTmax){fMaxpT = pTmax;}
 
   protected:
     TList*                fOutputContainer;           //! Output container
@@ -96,6 +97,8 @@ class AliAnalysisTaskGammaPureMC : public AliAnalysisTaskSE {
     TH2F*                 fHistPtYDeltaMi;            //! histo for Delta-
     TH2F*                 fHistPtYDelta0;             //! histo for Delta0
     TH2F*                 fHistPtYLambda;             //! histo for Lambda
+    TH2F*                 fHistPtYKPl;                //! histo for K+s
+    TH2F*                 fHistPtYKMi;                //! histo for K-s
 
     TH2F*                 fHistPtYPi0FromEta;         //! histo for Pi0s from Etas
     TH2F*                 fHistPtYPi0FromLambda;      //! histo for Pi0s from Lambdas
@@ -157,13 +160,14 @@ class AliAnalysisTaskGammaPureMC : public AliAnalysisTaskSE {
 
 	Int_t				  fIsK0;					  // k0 flag
     Int_t                 fIsMC;                      // MC flag
+    Double_t                 fMaxpT;                      // MC flag
 
 
   private:
     AliAnalysisTaskGammaPureMC(const AliAnalysisTaskGammaPureMC&); // Prevent copy-construction
     AliAnalysisTaskGammaPureMC &operator=(const AliAnalysisTaskGammaPureMC&); // Prevent assignment
 
-    ClassDef(AliAnalysisTaskGammaPureMC, 3);
+    ClassDef(AliAnalysisTaskGammaPureMC, 5);
 };
 
 #endif

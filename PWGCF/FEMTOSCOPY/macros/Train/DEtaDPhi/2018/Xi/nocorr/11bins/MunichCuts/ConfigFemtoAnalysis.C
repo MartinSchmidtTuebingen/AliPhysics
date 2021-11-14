@@ -57,6 +57,10 @@
 #include "AliFemtoV0TrackCut.h"
 #endif
 
+#include <stdio.h>
+#include <string.h>
+
+
 //________________________________________________________________________
 AliFemtoManager* ConfigFemtoAnalysis(const char* params) {
 
@@ -74,10 +78,13 @@ AliFemtoManager* ConfigFemtoAnalysis(const char* params) {
 	bool performSharedDaughterCut = true;
 	bool enablePairMonitors = true;
 
+	char *par = new char[strlen(params)+1];
+        strcpy(par,params);
+
 	char *parameter[21];
 	if(strlen(params)!=0)
 	  {
-	    parameter[0] = strtok(params, ","); // Splits spaces between words in params
+	    parameter[0] = strtok(par, ","); // Splits spaces between words in params
 	    cout<<"Parameter [0] (filterbit):"<<parameter[0]<<endl; // Writes first parameter
 	    parameter[1] = strtok(NULL, ",");
 	    cout<<"Parameter [1] (ktdep):"<<parameter[1]<<" "<<endl;
@@ -179,7 +186,7 @@ AliFemtoManager* ConfigFemtoAnalysis(const char* params) {
 	AliFemtoEventReaderAODChain *Reader = new AliFemtoEventReaderAODChain();
 	Reader->SetFilterMask(filterbit);
 	Reader->SetDCAglobalTrack(ifGlobalTracks); //false for FB7, true for the rest //we do not use DCA at all
-	Reader->SetUseMultiplicity(AliFemtoEventReaderAOD::kReference);
+	Reader->SetUseMultiplicity(AliFemtoEventReaderAOD::kCentrality);
 	//Reader->SetMinPlpContribSPD(minPlpContribSPD);
 	Reader->SetUseAliEventCuts(kTRUE);
 	Reader->SetIsPileUpEvent(ifIsPileUp);

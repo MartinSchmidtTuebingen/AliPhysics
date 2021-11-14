@@ -26,19 +26,22 @@
 #include "AliVTrack.h"
 #include "AliVVertex.h"
 #include "AliVEvent.h"
+#include "AliAODEvent.h"
 #include "AliVParticle.h"
 #include "AliMCEvent.h"
 #include "AliInputEventHandler.h"
 #include "AliVEventHandler.h"
 #include "AliAODTrack.h"
 #include "AliAODMCParticle.h"
+#include "AliAODMCHeader.h"
 #include "AliAODVertex.h"
+#include "AliAnalysisUtils.h"
 
 using TMath::TwoPi;
 
 const std::string AliAnalysisTaskLFefficiencies::fPosNeg[2] = {"neg","pos"};
 const int AliAnalysisTaskLFefficiencies::fNcuts = 8;
-const std::string AliAnalysisTaskLFefficiencies::fCutNames[8] = {"FB4","FB5","FB5+PID TPC", "FB5 + TOF matching", "FB5 + PID TOF", "FB5 + TOF matching - TOF mismatch", "FB5 + TOF matching - TOF mismatch + TOF pid", "FB5 + hasTOF + TOF mismatch"};
+const std::string AliAnalysisTaskLFefficiencies::fCutNames[8] = {"FB4","FB5","FB5+PID TPC", "FB5 + TOF matching", "FB5 + PID TOF", "FB5 + TOF matching - TOF mismatch", "FB5 + TOF matching - TOF mismatch + TOF pid", "TOF mismatch"};
 
 ///\cond CLASSIMP
 ClassImp(AliAnalysisTaskLFefficiencies);
@@ -68,11 +71,19 @@ void AliAnalysisTaskLFefficiencies::UserCreateOutputObjects() {
   fOutputList = new TList();
   fOutputList->SetOwner(true);
 
+  fNumberOfRecoPrimaryTracks = new TH1D("fNumberOfRecoPrimaryTracks",";Number of tracks;Number",4001,-0.5,4000.5);
+  fOutputList->Add(fNumberOfRecoPrimaryTracks);
   for (int iSpecies = 0; iSpecies < AliPID::kSPECIESC; iSpecies++) {
     for (int iCharge = 0; iCharge < 2; ++iCharge) {
       fGeneratedYPhiPt[iSpecies][iCharge] = new TH3D(Form("Gen_%s_%s",AliPID::ParticleShortName(iSpecies),fPosNeg[iCharge].data()),
         ";y;#varphi;#it{p}_{T} (GeV/#it{c})",9,-0.9,0.9,16,0.,TwoPi(),60,0.,6.);
       fOutputList->Add(fGeneratedYPhiPt[iSpecies][iCharge]);
+      fGeneratedYPhiPtMaterial[iSpecies][iCharge] = new TH3D(Form("GenMaterial_%s_%s",AliPID::ParticleShortName(iSpecies),fPosNeg[iCharge].data()),
+        ";y;#varphi;#it{p}_{T} (GeV/#it{c})",9,-0.9,0.9,16,0.,TwoPi(),60,0.,6.);
+      fOutputList->Add(fGeneratedYPhiPtMaterial[iSpecies][iCharge]);
+      fGeneratedYPhiPtWD[iSpecies][iCharge] = new TH3D(Form("GenWD_%s_%s",AliPID::ParticleShortName(iSpecies),fPosNeg[iCharge].data()),
+        ";y;#varphi;#it{p}_{T} (GeV/#it{c})",9,-0.9,0.9,16,0.,TwoPi(),60,0.,6.);
+      fOutputList->Add(fGeneratedYPhiPtWD[iSpecies][iCharge]);
       fGeneratedEtaPhiPt[iSpecies][iCharge] = new TH3D(Form("GenEta_%s_%s",AliPID::ParticleShortName(iSpecies),fPosNeg[iCharge].data()),
         ";#eta;#varphi;#it{p}_{T} (GeV/#it{c})",10,-1.,1.,16,0.,TwoPi(),60,0.,6.);
       fOutputList->Add(fGeneratedEtaPhiPt[iSpecies][iCharge]);
@@ -89,6 +100,18 @@ void AliAnalysisTaskLFefficiencies::UserCreateOutputObjects() {
     }
   }
   fEventCut.AddQAplotsToList(fOutputList);
+  fRejectedForOOBPileUp = new TH1D("fRejectedFromPileUp",";Number of tracks;Number",16001,3999.5,20000.5);
+  fOutputList->Add(fRejectedForOOBPileUp);
+  fRejectedForOOBPileUpInPileUpFreeGeneratedEvents = new TH1D("fRejectedForOOBPileUpInPileUpFreeGeneratedEvents",";Number of tracks;Number",16001,3999.5,20000.5);
+  fOutputList->Add(fRejectedForOOBPileUpInPileUpFreeGeneratedEvents);
+
+  const char*  event_labels[5] = {"Accepted", "OOB pile-up", "Generated with pile-up", "OOB pile-up in generated with pile-up", "OOB pile-up in generated without pile-up"};
+
+  fEventKind = new TH1D("fEventKind",";;Number os selected events", 5, -0.5, 4.5);
+  for (size_t iB = 1; iB<=5; iB++){
+    fEventKind->GetXaxis()->SetBinLabel(iB,event_labels[iB-1]);
+  }
+  fOutputList->Add(fEventKind);
 
   PostData(1,fOutputList);
 }
@@ -99,7 +122,7 @@ void AliAnalysisTaskLFefficiencies::UserCreateOutputObjects() {
 /// \return void
 ///
 void AliAnalysisTaskLFefficiencies::UserExec(Option_t *){
-  AliVEvent *ev = InputEvent();
+  AliAODEvent *ev = (AliAODEvent *)InputEvent();
   bool EventAccepted = fEventCut.AcceptEvent(ev);
 
   if (!EventAccepted) {
@@ -107,49 +130,85 @@ void AliAnalysisTaskLFefficiencies::UserExec(Option_t *){
     return;
   }
 
+  fEventKind->Fill(kAcceptedEvent);
+
   /// To perform the majority of the analysis - and also this one - the standard PID handler is
   /// required.
   AliAnalysisManager *mgr = AliAnalysisManager::GetAnalysisManager();
   AliInputEventHandler* handl = (AliInputEventHandler*)mgr->GetInputEventHandler();
+  
   AliPIDResponse* pid = handl->GetPIDResponse();
   if (!pid) {
     ::Fatal("AliAnalysisTaskLFefficiencies::UserExec","Missing PID response. Did you attach the AliPIDresponseTask to your analysis?");
   }
 
-  TClonesArray *stack = static_cast<TClonesArray*>(ev->GetList()->FindObject(AliAODMCParticle::StdBranchName()));
-  if (!stack)
-    ::Fatal("AliAnalysisTaskLFefficiencies::UserExec","MC analysis requested on a sample without the MC particle array.");
+  AliAODMCHeader *mcHeader = (AliAODMCHeader *)ev->GetList()->FindObject(AliAODMCHeader::StdBranchName());
+  if (!mcHeader){
+    ::Fatal("AliAnalysisTaskLFefficiencies::UserExec","MC header branch not found.");
+  }
 
-  for (int iMC = 0; iMC < stack->GetEntriesFast(); ++iMC) {
-    AliAODMCParticle *part = (AliAODMCParticle*)stack->UncheckedAt(iMC);
-    if (!part->IsPhysicalPrimary()) continue;
-    const int pdg = std::abs(part->GetPdgCode());
+  TClonesArray *arrayMC = (TClonesArray *)ev->GetList()->FindObject(AliAODMCParticle::StdBranchName());
+  if (!arrayMC){
+    ::Fatal("AliAnalysisTaskLFefficiencies::UserExec"," dMC particles branch not found.");
+  }
+  
+  int nRejectedParticles = 0;
+
+  for (int iMC = 0; iMC < arrayMC->GetEntriesFast(); ++iMC) {
+    AliAODMCParticle* part = (AliAODMCParticle *)(arrayMC->At(iMC));
+    if(AliAnalysisUtils::IsParticleFromOutOfBunchPileupCollision(iMC, mcHeader, arrayMC)){
+      nRejectedParticles++;
+      continue;
+    }
+    const int pdg = std::abs(part->PdgCode());
     const int iCharge = part->Charge() > 0 ? 1 : 0;
     for (int iSpecies = 0; iSpecies < AliPID::kSPECIESC; ++iSpecies) {
       if (pdg == AliPID::ParticleCode(iSpecies)) {
-        fGeneratedYPhiPt[iSpecies][iCharge]->Fill(part->Y(), part->Phi(), part->Pt());
-        fGeneratedEtaPhiPt[iSpecies][iCharge]->Fill(part->Eta(), part->Phi(), part->Pt());
+        if (part->IsPhysicalPrimary()) {
+          fGeneratedYPhiPt[iSpecies][iCharge]->Fill(part->Y(), part->Phi(), part->Pt());
+          fGeneratedEtaPhiPt[iSpecies][iCharge]->Fill(part->Eta(), part->Phi(), part->Pt());
+        } else if (part->IsSecondaryFromWeakDecay()) {
+          fGeneratedYPhiPtWD[iSpecies][iCharge]->Fill(part->Y(), part->Phi(), part->Pt());
+        } else if (part->IsSecondaryFromMaterial()) {
+          fGeneratedYPhiPtMaterial[iSpecies][iCharge]->Fill(part->Y(), part->Phi(), part->Pt());
+        }
         break;
       }
     }
+  }
+  if(nRejectedParticles){
+    fEventKind->Fill(kOutOfBunchPileUpEvent);
+    fRejectedForOOBPileUp->Fill(nRejectedParticles);
+  }
+  if(AliAnalysisUtils::IsPileupInGeneratedEvent(mcHeader,"Hijing")){
+    fEventKind->Fill(kPileUpInGenerated);
+    if(nRejectedParticles){
+      fEventKind->Fill(kOutOfBunchPileUpEventInPileUpInGeneratedEvent);
+    }
+  } else if(nRejectedParticles){
+    fEventKind->Fill(kOutOfBunchPileUpEventInPileUpFreeGeneratedEvent);
+    fRejectedForOOBPileUpInPileUpFreeGeneratedEvents->Fill(nRejectedParticles);
   }
 
 
   /// Checking how many deuterons in acceptance are reconstructed well
   TLorentzVector v;
+  int nPrimaries{0};
   for (int iT = 0; iT < (int)ev->GetNumberOfTracks(); ++iT) {
     /// Get the track and do the minimal cuts
     AliAODTrack *track = dynamic_cast<AliAODTrack*>(ev->GetTrack(iT));
     if (track->GetID() < 0) continue;
     if (!track->TestFilterBit(BIT(4))) continue;
 
-    AliAODMCParticle *part = (AliAODMCParticle*)stack->At(TMath::Abs(track->GetLabel()));
+    int iMC = TMath::Abs(track->GetLabel());
+    AliAODMCParticle *part = (AliAODMCParticle*)(arrayMC->At(iMC));
     if (!part) continue;
     if (!part->IsPhysicalPrimary()) continue;
+    nPrimaries++;
     const int iCharge = part->Charge() > 0 ? 1 : 0;
     int iSpecies = -1;
     for (int iS = 0; iS < AliPID::kSPECIESC; ++iS) {
-      if (std::abs(part->GetPdgCode()) == AliPID::ParticleCode(iS)) {
+      if (std::abs(part->PdgCode()) == AliPID::ParticleCode(iS)) {
         iSpecies = iS;
         break;
       }
@@ -182,6 +241,7 @@ void AliAnalysisTaskLFefficiencies::UserExec(Option_t *){
       }
     }
   } // End AOD track loop
+  fNumberOfRecoPrimaryTracks->Fill(nPrimaries);
 
   //  Post output data.
   PostData(1,fOutputList);

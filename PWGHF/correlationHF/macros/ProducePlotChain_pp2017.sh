@@ -27,37 +27,43 @@
 declare baseStartingDir="$PWD/ScriptOutput/"
 export HFCJlocalCodeDir="$PWD"
 # "/Users/administrator/soft/alisoft/aliphysics/master/PWGHF/correlationHF/macros"
-declare templateDirPP="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Templates_pp"
-declare templateDirPPb="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Templates_pPb"
+declare templateDirPP="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Templates_pp"
+declare templateDirPPb="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Templates_pPb"
 declare -a templateDirSystemSuffix=( "none" "none" "none" "none" ) #### THIS IS KEPT JUST FOR BACKWARD COMPATIBILITY WITH OLD TEMPLATES! NO NEED TO TOUCH IT UNLESS YOU WANT TO USE OLD TEMPLATES
 declare -a templateDir=( "$templateDirPP" "$templateDirPPb" "$templateDirPPb"  "$templateDirPP")
+
+###these for loading beta values from MC, in case of fixed beta approach!
+declare betaTemplDirPP="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Templates_pp/FitResults/Trends_pp/PYTHIA8"
+declare betaTemplDirPPb="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Templates_pPb/FitResults/Trends_pPb/PYTHIA8"
+declare -a betaTemplDir=( "$betaTemplDirPP" "$betaTemplDirPPb" "$betaTemplDirPPb"  "$betaTemplDirPP")
+
 ### the following is needed for hte comparison to MC (as well as MC fitting)
-declare -a Nmccase=( 6 6 6 6 )
-declare -a mccasePP=( 1 1 1 1 0 1 0 0 ) # according to CompareFitResults array: Perugia0, Perugia2010, Perugia2011, PYTHIA8, HERWIG, POHWEG+Perugia2011, POWHEG+Perugia2011 with EPS09, EPOS 3
+declare -a Nmccase=( 6 6 6 8 ) #warning! If you change this, the number of fitted MC models will change (and also their order!) I suggest not changing it but only the array below...
+declare -a mccasePP=( 0 0 1 1 1 1 1 1 ) # according to CompareFitResults array: Perugia0, Perugia2010, Perugia2011, PYTHIA8, HERWIG, POHWEG+Perugia2011, POWHEG+Perugia2011 with EPS09, EPOS 3
 declare -a mccasePPb=( 1 1 1 1 0 0 1 0 )
 declare -a isreflectedMC=( 0 0 0 0 0 0 0 1 ) # used only to determine the fit range and the transverse region range, it does not however change the results. Only EPOS is already reflected
-declare -a templRootNamepp=( "CorrelationPlotsPerugia0PtAveragefromC" "CorrelationPlotsPerugia2010PtAveragefromC" "CorrelationPlotsPerugia2011PtAveragefromC" "CorrelationPlotsPYTHIA8PtAveragefromC" "CorrelationPlotsHERWIGPtAveragefromC" "CorrelationPlotsPOWHEGPtAveragefromC"  "CorrelationPlotsEPOS3PtAveragefromC")
-declare -a templRootNamepPb=( "CorrelationPlotsPerugia0wBoostPtAveragefromC" "CorrelationPlotsPerugia2010wBoostPtAveragefromC" "CorrelationPlotsPerugia2011wBoostPtAveragefromC" "CorrelationPlotsPYTHIA8wBoostPtAveragefromC" "CorrelationPlotsHERWIGPtAveragefromC" "CorrelationPlotsPOWHEGPtAveragefromC" "CorrelationPlotsEPOS3PtAveragefromC")
+declare -a templRootNamepp=( "CorrelationPlotsPerugia0PtAveragefromC" "CorrelationPlotsPerugia2010PtAveragefromC" "CorrelationPlotsPerugia2011PtAveragefromC" "CorrelationPlotsPYTHIA8PtAveragefromC" "CorrelationPlotsHERWIGPtAveragefromC" "CorrelationPlotsPOWHEGPtAveragefromC" "CorrelationPlotsPOW_LOPtAveragefromC" "CorrelationPlotsEPOS3PtAveragefromC")
+declare -a templRootNamepPb=( "CorrelationPlotsPerugia0wBoostPtAveragefromC" "CorrelationPlotsPerugia2010wBoostPtAveragefromC" "CorrelationPlotsPerugia2011wBoostPtAveragefromC" "CorrelationPlotsPYTHIA8wBoostPtAveragefromC" "CorrelationPlotsHERWIGPtAveragefromC" "CorrelationPlotsPOWHEGPtAveragefromC" "CorrelationPlotsPOW_LOPtAveragefromC" "CorrelationPlotsEPOS3PtAveragefromC")
 
-declare puritytemplateDirpp="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/PurityTemplates_pp"
-declare puritytemplateDirpPb="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/PurityTemplates_pPb"
+declare puritytemplateDirpp="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/PurityTemplates_pp"
+declare puritytemplateDirpPb="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/PurityTemplates_pPb"
 declare -a puritytemplateDir=( "$puritytemplateDirpp" "$puritytemplateDirpPb" "$puritytemplateDirpPb" "$puritytemplateDirpp")
 
 ########## THE FOLLOWING DIRECTORIES SHOULD CONTAIN THE RESULTS BEFORE FD SUBTRACTION #####
-declare dirppDzeroNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Dzero_pp"
-declare dirpPbDzeroNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Dzero_pPb"
+declare dirppDzeroNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Dzero_pp"
+declare dirpPbDzeroNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Dzero_pPb"
 declare -a dirDzeroNotFDsubt=( "$dirppDzeroNotFDsubt" "$dirpPbDzeroNotFDsubt" "$dirpPbDzeroNotFDsubt" "$dirppDzeroNotFDsubt" )
 declare -a fpromptfileDzero=( "HFPtSpectrum_Nb.root" "HFPtSpectrum_Nb.root" "HFPtSpectrum_Nb.root"  "HFPtSpectrum_Nb_Dzero.root")
 declare -a filerootDzero=( "AzimCorrDistr_Dzero_Canvas_PtIntBins" "AzimCorrDistr_Dzero_Canvas_PtIntBins" "AzimCorrDistr_Dzero_Canvas_PtIntBins" "AzimCorrDistr_Dzero_Canvas_PtIntBins" )
 
-declare dirppDstarNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Dstar_pp"
-declare dirpPbDstarNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Dstar_pPb"
+declare dirppDstarNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Dstar_pp"
+declare dirpPbDstarNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Dstar_pPb"
 declare -a dirDstarNotFDsubt=( "$dirppDstarNotFDsubt" "$dirpPbDstarNotFDsubt" "$dirpPbDstarNotFDsubt" "$dirppDstarNotFDsubt" )
 declare -a fpromptfileDstar=( "HFPtSpectrum_Nb.root" "HFPtSpectrum_Nb.root" "HFPtSpectrum_Nb.root"  "HFPtSpectrum_Nb_Dstar.root")
 declare -a filerootDstar=( "AzimCorrDistr_Dstar_Canvas_PtIntBins" "AzimCorrDistr_Dstar_Canvas_PtIntBins" "AzimCorrDistr_Dstar_Canvas_PtIntBins" "AzimCorrDistr_Dstar_Canvas_PtIntBins" )
 
-declare dirppDplusNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Dplus_pp"
-declare dirpPbDplusNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017/Inputs/Dplus_pPb"
+declare dirppDplusNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Dplus_pp"
+declare dirpPbDplusNotFDsubt="/home/colamaria/Scrivania/Codici_Ausiliari_Dh/Dhadron_Final_Output_pp2017_PAPER/Inputs/Dplus_pPb"
 declare -a dirDplusNotFDsubt=( "$dirppDplusNotFDsubt" "$dirpPbDplusNotFDsubt" "$dirpPbDplusNotFDsubt" "$dirppDplusNotFDsubt" )
 declare -a fpromptfileDplus=( "HFPtSpectrum_Nb.root" "HFPtSpectrum_Nb.root" "HFPtSpectrum_Nb.root"  "HFPtSpectrum_Nb_Dplus.root")
 declare -a filerootDplus=( "AzimCorrDistr_Dplus_Canvas_PtIntBins" "AzimCorrDistr_Dplus_Canvas_PtIntBins" "AzimCorrDistr_Dplus_Canvas_PtIntBins" "AzimCorrDistr_Dplus_Canvas_PtIntBins" )
@@ -104,7 +110,7 @@ declare doInitAndReflStep=0 ## NOTE THAT THIS STEP IS NECESSARY ALSO IN CASE THE
 declare doAverage=0
 declare dofit=0
 declare doDrawFitFigure=0
-declare dofitMC=0
+declare dofitMC=1
 declare dofitawayside=1
 #Paper 2010&2013
 declare doNicePlot=0
@@ -543,13 +549,13 @@ if [ ${dofitMC} = 1 ]; then
 	for (( mccase=0; mccase<${Nmccase[${collsyst}]}; mccase++ ))
 	do 
 	    if [ ${collsyst} = 0  ]; then
-		$HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[${collsyst}]}${templRootNamepp[$mccase]} ${dofitawayside}
+		$HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[${collsyst}]}${templRootNamepp[$mccase]} ${dofitawayside} ${betaTemplDir[${collsyst}]}
 	    elif [ ${collsyst} = 1  ]; then
-		$HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[${collsyst}]}${templRootNamepPb[$mccase]} ${dofitawayside}
+		$HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[${collsyst}]}${templRootNamepPb[$mccase]} ${dofitawayside} ${betaTemplDir[${collsyst}]}
         elif [ ${collsyst} = 2  ]; then
-        $HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[1]}${templRootNamepPb[$mccase]} ${dofitawayside}
+        $HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[1]}${templRootNamepPb[$mccase]} ${dofitawayside} ${betaTemplDir[${collsyst}]}
 	    elif [ ${collsyst} = 3  ]; then
-        $HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[0]}${templRootNamepp[$mccase]} ${dofitawayside}
+        $HFCJlocalCodeDir/DoFitMC.sh ${collsyst} ${isreflectedMC[mccase]} ${averageOpt} ${templateDir[${collsyst}]}  ${templateDir[${collsyst}]}/FitResults/ ${collsystdir[0]}${templRootNamepp[$mccase]} ${dofitawayside} ${betaTemplDir[${collsyst}]}
         fi
 	done
 	collsyst=${collsyst}+1
@@ -561,7 +567,7 @@ if [ ${dofit} = 1 ]; then
     echo "Produce Plot Chain: fit data distributions"
     cd ${baseDir}/AllPlots/Averages/FitResults/    
     while [ ${collsyst} -le ${lastcollsyst} ]; do
-	$HFCJlocalCodeDir/DoFit.sh ${collsyst} ${reflect} ${averageOpt} ${baseDir}/AllPlots/Averages/  ${baseDir}/AllPlots/Averages/FitResults/ ${includev2[${collsyst}]} ${dofitawayside} ${doNewPedestalVars}
+	$HFCJlocalCodeDir/DoFit.sh ${collsyst} ${reflect} ${averageOpt} ${baseDir}/AllPlots/Averages/  ${baseDir}/AllPlots/Averages/FitResults/ ${includev2[${collsyst}]} ${dofitawayside} ${doNewPedestalVars} ${betaTemplDir[${collsyst}]}
 	collsyst=${collsyst}+1
     done
 fi
@@ -574,7 +580,6 @@ if [ ${doDrawFitFigure} = 1 ]; then
   root -b <<EOF &> NiceStylePlots.log
   .L ${HFCJlocalCodeDir}/DoNiceFitPlots.C
   SetInputDirectory("${baseDir}/AllPlots/Averages/FitResults")
-  SetpPbyear(${collsyst})
   DoNiceFitPlots()
   .q
 EOF
@@ -1194,8 +1199,12 @@ SetIsDataReflected($reflect)
 SetBaselineDirectory("${baseDir}/AllPlots/Averages/FitResults")
 SetAverageMode($averageOpt)
 SetSplitMClegendInTwoPanels(kTRUE)
-//SetIncludeAllMCmodels(kFALSE)
-//SetIncludeEPOS(kFALSE)
+SetIncludePerugia2011()
+SetIncludePYTHIA8()
+SetIncludeHERWIG()
+SetIncludePOWHEG()
+SetIncludePOWHEG_LO()
+SetIncludeEPOS()
 DoComparison_pp2017VsMCallPanels()
 DoComparison_pp2017VsMCSinglePanel()
 EOF
@@ -1209,7 +1218,7 @@ if [ ${doFitResultComparisonPPtoMC2017} = 1 ];then
     cd ${baseDir}/AllPlots/Averages/ComparisonToModels
     echo "Running CompareFitResultspp2017.C"
 
-    root -b <<EOF &> CompareFitResultspp2017toMC.log
+    root -b <<EOF &> CompareFitResultspp2017toMC_uniquecanvas.log
 .L ${HFCJlocalCodeDir}/CompareFitResultspp2017.C
 SetDirectoryFitResultPP("${baseDir}/AllPlots/Averages/FitResults/")
 SetDirectoryFitResultsMCPP("${templateDir[${collsyst}]}/FitResults/")
@@ -1224,28 +1233,13 @@ IncludeModel(7,${mccasePP[7]})
 CompareFitResultsPPDataToMC()
 CompareFitResultsPPtoMCUniqueCanvas()
 CompareFitResultsPPtoMCUniqueCanvas_2()
-EOF
-
-    root -b <<EOF &> CompareFitResultspp2017toMC_uniquecanvas.log
-.L ${HFCJlocalCodeDir}/CompareFitResultspp2017.C
-SetDirectoryFitResultPP("${baseDir}/AllPlots/Averages/FitResults/")
-SetDirectoryFitResultsMCPP("${templateDir[${collsyst}]}/FitResults/")
-IncludeModel(0,${mccasePP[0]})
-IncludeModel(1,${mccasePP[1]})
-IncludeModel(2,${mccasePP[2]})
-IncludeModel(3,${mccasePP[3]})
-IncludeModel(4,${mccasePP[4]})
-IncludeModel(5,${mccasePP[5]})
-IncludeModel(6,${mccasePP[6]}) 
-IncludeModel(7,${mccasePP[7]})
-SetDrawSystMC(kTRUE)
-CompareFitResultsPPtoMCUniqueCanvasAwaySide()
-CompareFitResultsPPtoMCUniqueCanvasAwaySide_2()
+CompareFitResults_Ratios_NS_1()
+CompareFitResults_Ratios_NS_2()
 EOF
 
 #ADDED...!!!
   echo "Running CompareFitResultspp2017toMC vs AssocPt track.C"
-    root -b <<EOF #&> CompareFitResultspp2017.log
+    root -b <<EOF &> CompareFitResultspp2017_vsPtAss.log
 .L ${HFCJlocalCodeDir}/CompareFitResultspp2017_vsPtAss.C
 SetDirectoryFitResultPP("${baseDir}/AllPlots/Averages/FitResults/")
 SetDirectoryFitResultsMCPP("${templateDir[${collsyst}]}/FitResults/")
@@ -1259,7 +1253,7 @@ IncludeModel(6,${mccasePP[6]})
 IncludeModel(7,${mccasePP[7]})
 SetDrawSystMC(kTRUE)
 CompareFitResultsPPtoMCUniqueCanvas_vsPtAss()
-CompareFitResultsPPtoMCUniqueCanvasAwaySide_vsPtAss()
+CompareFitResults_Ratios_NS_vsPtAss()
 EOF
 #...ADDED!!!
 
@@ -1269,8 +1263,8 @@ fi
 
 if [ ${doFitResultComparisonPPtoMC2017awayside} = 1 ];then
     collsyst=3
-    mkdir -p ${baseDir}/AllPlots/Averages/FitResults/ComparisonpptoMC
-    cd ${baseDir}/AllPlots/Averages/FitResults/ComparisonpptoMC
+    mkdir -p ${baseDir}/AllPlots/Averages/ComparisonToModels
+    cd ${baseDir}/AllPlots/Averages/ComparisonToModels
     echo "Running CompareFitResultspp2017.C for away side"
 
     root -b <<EOF &> CompareFitResultspp2017toMC_AS_uniquecanvas.log
@@ -1285,9 +1279,32 @@ IncludeModel(4,${mccasePP[4]})
 IncludeModel(5,${mccasePP[5]})
 IncludeModel(6,${mccasePP[6]}) 
 IncludeModel(7,${mccasePP[7]})
-SetDrawSystMC(kFALSE)
+SetDrawSystMC(kTRUE)
 CompareFitResultsPPtoMCUniqueCanvasAwaySide()
+CompareFitResultsPPtoMCUniqueCanvasAwaySide_2()
+CompareFitResults_Ratios_AS_1()
+CompareFitResults_Ratios_AS_2()
 EOF
+
+#ADDED...!!!
+  echo "Running CompareFitResultspp2017toMC vs AssocPt track.C"
+    root -b <<EOF &> CompareFitResultspp2017_AS_vsPtAss.log
+.L ${HFCJlocalCodeDir}/CompareFitResultspp2017_vsPtAss.C
+SetDirectoryFitResultPP("${baseDir}/AllPlots/Averages/FitResults/")
+SetDirectoryFitResultsMCPP("${templateDir[${collsyst}]}/FitResults/")
+IncludeModel(0,${mccasePP[0]})
+IncludeModel(1,${mccasePP[1]})
+IncludeModel(2,${mccasePP[2]})
+IncludeModel(3,${mccasePP[3]})
+IncludeModel(4,${mccasePP[4]})
+IncludeModel(5,${mccasePP[5]})
+IncludeModel(6,${mccasePP[6]}) 
+IncludeModel(7,${mccasePP[7]})
+SetDrawSystMC(kTRUE)
+CompareFitResultsPPtoMCUniqueCanvasAwaySide_vsPtAss()
+CompareFitResults_Ratios_AS_vsPtAss()
+EOF
+#...ADDED!!!
 fi
 
 rm ${ALICE_PHYSICS}/../src #was needed by §AliBuild

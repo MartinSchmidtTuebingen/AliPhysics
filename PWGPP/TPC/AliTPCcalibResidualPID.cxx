@@ -21,7 +21,7 @@
 // Yvonne Pachmayer <pachmay@physi.uni-heidelberg.de>
 //
 
-
+#include <TObjString.h>
 #include "AliTPCcalibResidualPID.h"
 #include "TChain.h"
 #include "AliAnalysisManager.h"
@@ -39,6 +39,7 @@
 #include "AliESDv0KineCuts.h"
 #include "AliESDv0.h"
 #include "AliCentrality.h"
+#include "AliAnalysisUtils.h"
 #include "THnSparse.h"
 #include "TH2D.h"
 #include "TCanvas.h"
@@ -73,8 +74,10 @@ AliTPCcalibResidualPID::AliTPCcalibResidualPID()
     fUseMCinfo(kTRUE),
     fIsPbPb(kFALSE),
     fIsPbpOrpPb(kFALSE),
+    fIsPbPb(kFALSE),
     fZvtxCutEvent(9999.0),
     fV0KineCuts(0x0),
+    fAnaUtils(0x0),
     fCutOnProdRadiusForV0el(kTRUE),
     fNumTagsStored(0),
     fV0tags(0x0),
@@ -94,6 +97,7 @@ AliTPCcalibResidualPID::AliTPCcalibResidualPID()
     fProduceTPCSignalSparse(0),
     fCorrectdEdxEtaDependence(0),
     fCorrectdEdxMultiplicityDependence(0),
+    fCorrectdEdxPileupDependence(kTRUE),
     fThnspTpc(0),
     fWriteAdditionalOutput(kFALSE),
     fQAList(0x0),
@@ -147,8 +151,10 @@ AliTPCcalibResidualPID::AliTPCcalibResidualPID(const char *name)
     fUseMCinfo(kTRUE),
     fIsPbPb(kFALSE),
     fIsPbpOrpPb(kFALSE),
+    fIsPbPb(kFALSE),
     fZvtxCutEvent(9999.0),
     fV0KineCuts(0x0),
+    fAnaUtils(0x0),
     fCutOnProdRadiusForV0el(kTRUE),
     fNumTagsStored(0),
     fV0tags(0x0),
@@ -168,6 +174,7 @@ AliTPCcalibResidualPID::AliTPCcalibResidualPID(const char *name)
     fProduceTPCSignalSparse(0),
     fCorrectdEdxEtaDependence(0),
     fCorrectdEdxMultiplicityDependence(0),
+    fCorrectdEdxPileupDependence(kTRUE),
     fThnspTpc(0),
     fWriteAdditionalOutput(kFALSE),
     fQAList(0x0),
@@ -245,6 +252,9 @@ AliTPCcalibResidualPID::~AliTPCcalibResidualPID()
 
   delete fV0KineCuts;
   fV0KineCuts = 0;
+  
+  delete fAnaUtils;
+  fAnaUtils = 0;
 
   delete [] fV0tags;
   fV0tags = 0;
@@ -297,7 +307,9 @@ void AliTPCcalibResidualPID::UserCreateOutputObjects()
 
   // V0 Kine cuts 
   fV0KineCuts = new AliESDv0KineCuts;
-  fV0KineCuts->SetGammaCutChi2NDF(5.);
+  fV0KineCuts->SetGammaCutChi2NDF(5.);  
+  
+  fAnaUtils = new AliAnalysisUtils();
 
   if (fCutOnProdRadiusForV0el) {
     // Only accept V0el with prod. radius within 45 cm -> PID will by systematically biased for larger values!
@@ -477,9 +489,9 @@ THnSparseF* AliTPCcalibResidualPID::InitialisePIDQAHist(TString name, TString ti
   //
   title.Append(";p (GeV/c);tpc signal;particle ID;assumed particle;nSigmaTPC;nSigmaTOF;centrality");
   const Int_t kNdim = 7;
-  Int_t    binsHistQA[kNdim] = {135, 1980,    4,    5, 40, 10,  40 };
-  Double_t xminHistQA[kNdim] = {0.1,   20, -0.5, -0.5, -10, -5,   0.};
-  Double_t xmaxHistQA[kNdim] = {50., 2000,  3.5,  4.5,  10,  5, IsPbPb ? 20000 : 4000};
+  Int_t    binsHistQA[kNdim] = {135, 1980,    4,    5, 40, 10,  IsPbPb ? 40 : 40 };
+  Double_t xminHistQA[kNdim] = {0.1,   20., -0.5, -0.5, -10., -5.,   0.};
+  Double_t xmaxHistQA[kNdim] = {50., 2000.,  3.5,  4.5,  10.,  5., IsPbPb ? 20000. : 4000.};
   THnSparseF* h = new THnSparseF(name.Data(), title.Data(), kNdim, binsHistQA, xminHistQA, xmaxHistQA);
   BinLogAxis(h, 0);
   SetAxisNamesFromTitle(h);
@@ -498,10 +510,13 @@ void AliTPCcalibResidualPID::Process(AliESDEvent *const esdEvent, AliMCEvent *co
     return;
   }
 
-  if (!fPIDResponse || !fV0KineCuts) {
-    Printf("ERROR: No PIDresponse and/or v0KineCuts!");
+  if (!fPIDResponse || !fV0KineCuts || !fAnaUtils) {
+    Printf("ERROR: No PIDresponse, v0KineCuts or AliAnalysisUtils!");
     return;
   }
+  
+  if (fAnaUtils->IsPileUpSPD(esdEvent))
+    return;
 
   Float_t centralityFper=99;
 
@@ -534,8 +549,9 @@ void AliTPCcalibResidualPID::Process(AliESDEvent *const esdEvent, AliMCEvent *co
 
   const Double_t magField = esdEvent->GetMagneticField();
 
-  Bool_t etaCorrAvail = fPIDResponse->UseTPCEtaCorrection();
-  Bool_t multCorrAvail = fPIDResponse->UseTPCMultiplicityCorrection();
+  const Bool_t etaCorrAvail    = fPIDResponse->UseTPCEtaCorrection();
+  const Bool_t multCorrAvail   = fPIDResponse->UseTPCMultiplicityCorrection();
+  const Bool_t pileupCorrAvail = fPIDResponse->UseTPCPileupCorrection();
 
   for (Int_t iTracks = 0; iTracks < nTotTracks; iTracks++){//begin track loop 
     AliESDtrack *trackESD = esdEvent->GetTrack(iTracks);
@@ -786,44 +802,24 @@ void AliTPCcalibResidualPID::Process(AliESDEvent *const esdEvent, AliMCEvent *co
         AliError("Ignoring this error from now on!");
     }
     
-    if (fCorrectdEdxEtaDependence && etaCorrAvail && fCorrectdEdxMultiplicityDependence && multCorrAvail) {
-      processedTPCsignal[0] = fPIDResponse->GetTPCResponse().GetEtaAndMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kElectron,
-                                                                                                     AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[1] = fPIDResponse->GetTPCResponse().GetEtaAndMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kPion,
-                                                                                                     AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[2] = fPIDResponse->GetTPCResponse().GetEtaAndMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kKaon,
-                                                                                                     AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[3] = fPIDResponse->GetTPCResponse().GetEtaAndMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kProton,
-                                                                                                     AliTPCPIDResponse::kdEdxDefault);
-    }
-    else if (fCorrectdEdxEtaDependence && etaCorrAvail) {
-      processedTPCsignal[0] = fPIDResponse->GetTPCResponse().GetEtaCorrectedTrackdEdx(trackESD, AliPID::kElectron,
-                                                                                      AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[1] = fPIDResponse->GetTPCResponse().GetEtaCorrectedTrackdEdx(trackESD, AliPID::kPion,
-                                                                                      AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[2] = fPIDResponse->GetTPCResponse().GetEtaCorrectedTrackdEdx(trackESD, AliPID::kKaon,
-                                                                                      AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[3] = fPIDResponse->GetTPCResponse().GetEtaCorrectedTrackdEdx(trackESD, AliPID::kProton,
-                                                                                      AliTPCPIDResponse::kdEdxDefault);
-    }
-    else if (fCorrectdEdxMultiplicityDependence && multCorrAvail) {
-      processedTPCsignal[0] = fPIDResponse->GetTPCResponse().GetMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kElectron,
-                                                                                               AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[1] = fPIDResponse->GetTPCResponse().GetMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kPion,
-                                                                                               AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[2] = fPIDResponse->GetTPCResponse().GetMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kKaon,
-                                                                                               AliTPCPIDResponse::kdEdxDefault);
-      processedTPCsignal[3] = fPIDResponse->GetTPCResponse().GetMultiplicityCorrectedTrackdEdx(trackESD, AliPID::kProton,
-                                                                                               AliTPCPIDResponse::kdEdxDefault);
-    }
-    
+    AliTPCPIDResponse& tpcResponse = fPIDResponse->GetTPCResponse();
+    const Bool_t etaCorrected = fCorrectdEdxEtaDependence && etaCorrAvail;
+    const Bool_t multCorrected = fCorrectdEdxMultiplicityDependence && multCorrAvail;
+    const Bool_t pileupCorrected = fCorrectdEdxPileupDependence && pileupCorrAvail;
+
+    processedTPCsignal[0] = tpcResponse.GetCorrectedTrackdEdx(trackESD, AliPID::kElectron, etaCorrected, multCorrected, pileupCorrected);
+    processedTPCsignal[1] = tpcResponse.GetCorrectedTrackdEdx(trackESD, AliPID::kPion,     etaCorrected, multCorrected, pileupCorrected);
+    processedTPCsignal[2] = tpcResponse.GetCorrectedTrackdEdx(trackESD, AliPID::kKaon,     etaCorrected, multCorrected, pileupCorrected);
+    processedTPCsignal[3] = tpcResponse.GetCorrectedTrackdEdx(trackESD, AliPID::kProton,   etaCorrected, multCorrected, pileupCorrected);
+
     // id 5 is just again Kaons in restricted eta range
     processedTPCsignal[4] = processedTPCsignal[2];
     
     for(Int_t iPart = 0; iPart < 5; iPart++) {
       // Only accept "Kaons" within |eta| < 0.2 for index 4 in case of data (no contamination in case of MC, so this index is not used)
-      if (iPart == 4 && ((mcEvent && fUseMCinfo) || abs(trackESD->Eta()) > 0.2))
+      if (iPart == 4 && ((mcEvent && fUseMCinfo) || abs(trackESD->Eta()) > 0.2)) {
         continue;
+      }
       
       Double_t vecHistQA[7] = {precin, processedTPCsignal[iPart], (Double_t)particleID, (Double_t)iPart, tpcQA[iPart], tofQA[iPart],
                                (Double_t)nTotESDTracks};
@@ -4373,19 +4369,4 @@ void AliTPCcalibResidualPID::SetAxisNamesFromTitle(const THnSparseF *h)
   for (Int_t i=0; i<h->GetNdimensions(); ++i) {
     h->GetAxis(i)->SetName(h->GetAxis(i)->GetTitle());
   }
-}
-
-TString AliTPCcalibResidualPID::GetStringFitType(Int_t fitType) {   
-  if (fitType == AliTPCcalibResidualPID::kLund)
-    return "Lund";
-  else if (fitType == AliTPCcalibResidualPID::kSaturatedLund)
-    return "Saturated Lund";
-  else if (fitType == AliTPCcalibResidualPID::kAleph)
-    return "ALEPH";
-  else if (fitType == AliTPCcalibResidualPID::kAlephWithAdditionalParam)
-    return "Modified ALEPH";
-  else if (fitType == AliTPCcalibResidualPID::kAlephExternal)
-    return "ExternalTrackParameters::ALEPH";
-  else
-    return "";
 }

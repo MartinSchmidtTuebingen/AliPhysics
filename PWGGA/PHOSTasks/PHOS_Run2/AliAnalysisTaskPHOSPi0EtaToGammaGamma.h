@@ -258,6 +258,13 @@ class AliAnalysisTaskPHOSPi0EtaToGammaGamma : public AliAnalysisTaskSE {
       fPHOSTriggerHelper->ApplyTOFCut(TOFflag);
       fPHOSTriggerHelper->SetDummyRunNumber(dummy_runNo);
     }
+    void SetPHOSTriggerAnalysisMB(Int_t L1input, Int_t L0input, Double_t Ethre, Bool_t isMC, Bool_t TOFflag, Int_t dummy_runNo=-1){
+      fIsPHOSTriggerAnalysis = kFALSE;//this is MB analysis
+      fEnergyThreshold = Ethre;
+      fPHOSTriggerHelper = new AliPHOSTriggerHelper(L1input,L0input,isMC);
+      fPHOSTriggerHelper->ApplyTOFCut(TOFflag);
+      fPHOSTriggerHelper->SetDummyRunNumber(dummy_runNo);
+    }
 
     void SetTriggerMatchingDeltaR(Double_t DeltaR){
       fPHOSTriggerHelper->SetMatchingDeltaR(DeltaR);
@@ -302,6 +309,8 @@ class AliAnalysisTaskPHOSPi0EtaToGammaGamma : public AliAnalysisTaskSE {
 
     void SetPIDStudy(Bool_t flag) {fPIDStudy = flag;}
 
+    void SetJetPtFactor(Double_t factor) {fPtHardAndJetPtFactor = factor;}
+    void SetSingleParticlePtFactor(Double_t factor) {fPtHardAndSinglePtFactor = factor;}
 
   protected:
     virtual void UserCreateOutputObjects();
@@ -437,7 +446,7 @@ class AliAnalysisTaskPHOSPi0EtaToGammaGamma : public AliAnalysisTaskSE {
     Double_t fBunchSpace;// in unit of ns.
     Int_t fCollisionSystem;//colliions system : pp=0, PbPb=1, pPb (Pbp)=2;
     TF1 *fTOFEfficiency;//TOF cut efficiency as a function of cluster energy;
-    TF1 *fTriggerEfficiency;//TOF cut efficiency as a function of cluster energy;
+    TF1 *fTriggerEfficiency;//trigger  efficiency as a function of cluster energy;
     AliESDtrackCuts *fESDtrackCutsGlobal;//good global track
     AliESDtrackCuts *fESDtrackCutsGlobalConstrained;//global track but constrained to IP because of SPD dead area
     TF1 *fAdditionalPi0PtWeight[11];//weight function for pT distribution
@@ -458,6 +467,8 @@ class AliAnalysisTaskPHOSPi0EtaToGammaGamma : public AliAnalysisTaskSE {
     AliStack *fMCArrayESD;     //MC particles array in ESD
     TClonesArray *fMCArrayAOD; //MC particles array in AOD
     AliPHOSJetJetMC *fJJMCHandler;
+    Double_t fPtHardAndJetPtFactor;
+    Double_t fPtHardAndSinglePtFactor;
     Int_t fRunNumber;
     AliPHOSGeometry *fPHOSGeo;
     TList *fPHOSEvents[10][12];
@@ -513,7 +524,7 @@ class AliAnalysisTaskPHOSPi0EtaToGammaGamma : public AliAnalysisTaskSE {
     AliAnalysisTaskPHOSPi0EtaToGammaGamma(const AliAnalysisTaskPHOSPi0EtaToGammaGamma&);
     AliAnalysisTaskPHOSPi0EtaToGammaGamma& operator=(const AliAnalysisTaskPHOSPi0EtaToGammaGamma&);
 
-    ClassDef(AliAnalysisTaskPHOSPi0EtaToGammaGamma, 68);
+    ClassDef(AliAnalysisTaskPHOSPi0EtaToGammaGamma, 72);
 };
 
 #endif

@@ -107,6 +107,8 @@ public:
   
   static const Int_t fgkNmcTypes = 10;    ///< Number of MC trigger particles checked when filling MC histograms
   
+  void         SetMCGenType(Int_t min = 0, Int_t max = 6) { if(min >= 0 && min < fgkNmcTypes) fMCGenTypeMin = min ;
+    if(max >= 0 && max < fgkNmcTypes) fMCGenTypeMax = max ; }
   
   Bool_t       IsTriggerTheEventLeadingParticle();
   
@@ -218,9 +220,6 @@ public:
   void         SetNAssocPtBins(Int_t n) ;
   void         SetAssocPtBinLimit(Int_t ibin, Float_t pt) ;
   
-  void         SetNTriggerPtBins(Int_t n) ;
-  void         SetTriggerPtBinLimit(Int_t ibin, Float_t pt) ;
-  
   Bool_t       IsMixStoredInReaderOn()     const { return fUseMixStoredInReader  ; }
   void         SwitchOnUseMixStoredInReader()    { fUseMixStoredInReader = kTRUE ; }
   void         SwitchOffUseMixStoredInReader()   { fUseMixStoredInReader = kFALSE; }
@@ -251,8 +250,17 @@ public:
   void         SwitchOnFillHistogramsPerTCardIndex()  { fFillPerTCardIndexHistograms = kTRUE  ; }
   void         SwitchOffFillHistogramsPerTCardIndex() { fFillPerTCardIndexHistograms = kFALSE ; }  
   
-  void         SetMCGenType(Int_t min = 0, Int_t max = 6) { if(min >= 0 && min < fgkNmcTypes) fMCGenTypeMin = min ;
-    if(max >= 0 && max < fgkNmcTypes) fMCGenTypeMax = max ; }
+  void         SwitchOnFillHistogramsUePart()    { fFillUePartHistograms = kTRUE  ; }
+  void         SwitchOffFillHistogramsUePart()   { fFillUePartHistograms = kFALSE ; }  
+  
+  void         SwitchOnFillXEHistograms()        { fFillXEHistograms = kTRUE  ; }
+  void         SwitchOffFillXEHistograms()       { fFillXEHistograms = kFALSE ; }  
+  
+  void         SwitchOnFillZTHistograms()        { fFillZTHistograms = kTRUE  ; }
+  void         SwitchOffFillZTHistograms()       { fFillZTHistograms = kFALSE ; }  
+  
+  void         SwitchOnFillHBPHistograms()       { fFillHBPHistograms = kTRUE  ; }
+  void         SwitchOffFillHBPHistograms()      { fFillHBPHistograms = kFALSE ; }  
   
 private:
   
@@ -305,9 +313,6 @@ private:
   Int_t        fNAssocPtBins ;                           ///<  Number of associated pT bins under study.
   Float_t      fAssocPtBinLimit[20] ;                    ///<  Associated pT under study.
   
-  Int_t        fNTrigPtBins ;                            ///<  Number of bins for deltaEta-deltaPhi histogram.
-  Float_t      fTrigPtBinLimit[20] ;                     ///<  Trigger pT bins for deltaEta-deltaPhi histogram.
-  
   Bool_t       fCorrelVzBin ;                            ///<  Fill one histogram per vz bin.
   
   /// Containers for tracks in stored events for mixing.
@@ -347,8 +352,13 @@ private:
   Int_t        fTCardIndex;                              ///<  Store here the T-Card index per trigger cluster.
   
   Bool_t       fFillTaggedDecayHistograms;               ///<  Fill pT in cone distributions in background bins for decay particles.
-    
+     
   Float_t      fDecayTagsM02Cut;                         ///<  Lambda0 cut for decay particles.
+  
+  Bool_t       fFillUePartHistograms;                    ///< Fill UePart histograms
+  Bool_t       fFillXEHistograms;                        ///< Fill xE histograms
+  Bool_t       fFillZTHistograms;                        ///< Fill zT histograms
+  Bool_t       fFillHBPHistograms;                       ///< Fill hump back plateau histograms
   
   Int_t        fMCGenTypeMin;                            ///<  Of the fgkNmcTypes possible types, select those between fMCGenTypeMin and fMCGenTypeMax.
   Int_t        fMCGenTypeMax;                            ///<  Of the fgkNmcTypes possible types, select those between fMCGenTypeMin and fMCGenTypeMax.
@@ -624,7 +634,11 @@ private:
   TH2F *       fhMixXECharged;                           //!<! xE for mixed event.
   TH2F *       fhMixXEUeCharged;                         //!<! xE for mixed event in Ue region.
   TH2F *       fhMixHbpXECharged;                        //!<! ln(1/xE) for mixed event.
-  
+  TH2F *       fhMixZTCharged;                           //!<! zT for mixed event.
+  TH2F *       fhMixZTUeCharged;                         //!<! zT for mixed event in Ue region.
+  TH2F *       fhMixHbpZTCharged;                        //!<! ln(1/zT) for mixed event.
+  TH2F *       fhMixPtTrigPout  ;                        //!<! Pout =associated pt*sin(delta phi) distribution vs trigger pt
+  TH2F *       fhMixPtTrigCharged ;                      //!<! trigger and correlated particl pt, to be used for mean value for kt
   /// Difference of charged particle phi and trigger particle  phi as function of  trigger particle pT, for different associated bins.
   TH2F **      fhMixDeltaPhiChargedAssocPtBin;           //![fNAssocPtBins*GetNZvertBin()]
   
@@ -689,7 +703,7 @@ private:
   AliAnaParticleHadronCorrelation & operator = (const AliAnaParticleHadronCorrelation & ph) ;
   
   /// \cond CLASSIMP
-  ClassDef(AliAnaParticleHadronCorrelation,37) ;
+  ClassDef(AliAnaParticleHadronCorrelation,39) ;
   /// \endcond
   
 } ;
