@@ -19,7 +19,6 @@
 #include "TRandom3.h"
 #include "TROOT.h"
 
-R__ADD_INCLUDE_PATH($ALICE_PHYSICS);
 #include "AliTPCPIDmathFit.h"
 #include "THnSparseDefinitions.h"
 

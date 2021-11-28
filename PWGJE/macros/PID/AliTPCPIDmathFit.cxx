@@ -103,10 +103,10 @@ AliTPCPIDmathFit* AliTPCPIDmathFit::Instance(const Int_t numXbinsRegularisation,
   }
   
   if (numXbinsRegularisation > 0 && numXbinsRegularisation != fgInstance->GetNumXbinsRegularisation()) {
-    printf("Different number of x bins for regularisation. Creating new instance with %d instead of %d such bins...\n",
-           numXbinsRegularisation, fgInstance->GetNumXbinsRegularisation());
+    printf("Different number of x bins for regularisation. Creating new instance with %d instead of %d such bins...\n", numXbinsRegularisation, fgInstance->GetNumXbinsRegularisation());
     delete fgInstance;
     fgInstance = new AliTPCPIDmathFit(numXbinsRegularisation, numSimultaneousFits, maxDataPoints);
+    printf("New instance created");
   }
    
   return fgInstance;
