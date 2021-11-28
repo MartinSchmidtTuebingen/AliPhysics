@@ -19,8 +19,8 @@
 #include "TRandom3.h"
 #include "TROOT.h"
 
-#include "AliTPCPIDmathFit.h"
-#include "THnSparseDefinitions.h"
+#include "./AliTPCPIDmathFit.h"
+#include "./THnSparseDefinitions.h"
 
 #include <iostream>
 #include <iomanip>
@@ -43,7 +43,7 @@ const TString identifiedLabels[2] = { "Most Probable PID", "MC" };
 Int_t isMC = 0;
 
 const TString minimisationStrategy = "MIGRAD"; // "MINIMIZE"
-Bool_t takeIntoAccountMuons = kTRUE;
+Bool_t takeIntoAccountMuons = kFALSE;
 
 // 0 = no muons, 1 = muonFrac=elFrac, 2(3) = muonFrac/elFrac tuned on MC for DefaultTrackCuts (hybridTrackCuts),
 // 4 = muonFrac/elFrac tuned on MC for hybridTrackCuts for jet particles,

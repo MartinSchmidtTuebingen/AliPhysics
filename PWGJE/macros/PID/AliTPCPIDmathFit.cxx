@@ -54,10 +54,14 @@ void AliTPCPIDmathFit::ClearRefHistos()
 {
   // Clear list of reference histos
   
-  for (Int_t i = 0; i < fNrefHistos; i++)
+  for (Int_t i = 0; i < fNrefHistos; i++) {
+    std::cout << fRefHistos[i] << std::endl;
     delete fRefHistos[i];
+  }
   
+  std::cout << "All histos deleted" << std::endl;
   delete [] fRefHistos;
+  std::cout << "List delete" << std::endl;
   fRefHistos = 0x0;
   fNrefHistos = 0;
 }
