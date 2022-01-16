@@ -46,6 +46,7 @@ AliAnalysisTaskHOCFA::AliAnalysisTaskHOCFA():
   fPtMin(0.2), fPtMax(5.),
   fUseWeightsNUE(kTRUE), fUseWeightsNUA(kFALSE),
   fGetSC3h(kTRUE),
+  fGetEtaGap(kFALSE), fEtaGap(0.),
   fNCombi(6),
   fHistoConfig(0)
 {
@@ -64,6 +65,7 @@ AliAnalysisTaskHOCFA::AliAnalysisTaskHOCFA(const char *name):
   fPtMin(0.2), fPtMax(5.),
   fUseWeightsNUE(kTRUE), fUseWeightsNUA(kFALSE),
   fGetSC3h(kTRUE),
+  fGetEtaGap(kFALSE), fEtaGap(0.),
   fNCombi(6),
   fHistoConfig(0)
 {
@@ -100,6 +102,7 @@ void AliAnalysisTaskHOCFA::UserCreateOutputObjects()
   fHistoConfig->Fill(2.5, fMultiplicityMin);
   if (fUseWeightsNUE) {fHistoConfig->Fill(3.5, 1.);}
   if (fUseWeightsNUA) {fHistoConfig->Fill(4.5, 1.);}
+  if (fGetEtaGap) {fHistoConfig->Fill(5.5, fEtaGap);}
 }
 
 // ------------------------------------------------------------------------- //
@@ -117,6 +120,7 @@ void AliAnalysisTaskHOCFA::UserExec(Option_t *option)
   fHistoMulti[fCentralityBin]->Fill(fMultiplicity);
 
 // Get the information on the selected tracks.
+  double *iEta = new double[fMultiplicity]();
   double *iPhi = new double[fMultiplicity]();
   double *iWeights = new double[fMultiplicity]();
   double iEffCorr = 1.;         // Efficiency (pT-weight = 1/efficiency).
@@ -125,25 +129,30 @@ void AliAnalysisTaskHOCFA::UserExec(Option_t *option)
   for (Long64_t iTrack = 0; iTrack < fMultiplicity; iTrack++) {
     AliJBaseTrack *aTrack = (AliJBaseTrack*)fInputList->At(iTrack);
     if (!aTrack) {continue;}
+    iEta[iTrack] = aTrack->Eta();
     iPhi[iTrack] = aTrack->Phi();
 
-    fHistoPt[fCentralityBin]->Fill(aTrack->Pt());
-    fHistoEta[fCentralityBin]->Fill(aTrack->Eta());
-    fHistoPhi[fCentralityBin]->Fill(iPhi[iTrack]);
-    fHistoCharge[fCentralityBin]->Fill(aTrack->GetCharge());
-
     if (fUseWeightsNUE) {iEffCorr = aTrack->GetTrackEff();}
-    if(fUseWeightsNUA) {iPhiModuleCorr = aTrack->GetWeight();}
+    if (fUseWeightsNUA) {iPhiModuleCorr = aTrack->GetWeight();}
+    if (fDebugLevel > 10) printf("iEffCorr: %.6f iPhiModuleCorr: %.6f \n", iEffCorr, iPhiModuleCorr);
     iWeights[iTrack] = (1.0/iEffCorr)/iPhiModuleCorr;
+
+    fHistoPt[fCentralityBin]->Fill((1./iEffCorr)*aTrack->Pt());
+    fHistoEta[fCentralityBin]->Fill(iEta[iTrack]);
+    fHistoPhi[fCentralityBin]->Fill((1./iPhiModuleCorr)*iPhi[iTrack]);
+    fHistoCharge[fCentralityBin]->Fill(aTrack->GetCharge());
   }
 
 // Compute the Q-vectors and multiparticle correlations.
   CalculateQvectors(fMultiplicity, iPhi, iWeights);
   ComputeAllTerms();
 
+// If true, calculate the 2-particle correlators for v1 to v8 using eta gaps.
+  if (fGetEtaGap) {ComputeEtaGaps(fMultiplicity, iPhi, iWeights, iEta);}
+
 // Reset the variables for the next event.
   fMultiplicity = 0;
-  delete [] iPhi; delete [] iWeights;
+  delete [] iEta; delete [] iPhi; delete [] iWeights;
   iEffCorr = 1.; iPhiModuleCorr = 1.;
 }
 
@@ -169,6 +178,7 @@ void AliAnalysisTaskHOCFA::InitialiseArrayMembers()
     fHistoEta[i] = NULL;
     fHistoPhi[i] = NULL;
     fHistoCharge[i] = NULL;
+    fCorrelEtaGap[i] = NULL;
     for (int j = 0; j < 6; j++) {
       fCorrelTerms[j][i] = NULL;
       fErrorTermsSC3h[j][i] = NULL;
@@ -233,7 +243,7 @@ void AliAnalysisTaskHOCFA::BookFinalResults()
   if (!fMainList) {Fatal("AliAnalysisTaskHOCFA::BookFinalResults()", "FATAL: fMainList not found.");}
 
 // Book the configuration histogram.
-  fHistoConfig = new TProfile("", "", 5, 0., 5.);
+  fHistoConfig = new TProfile("", "", 6, 0., 6.);
   fHistoConfig->SetName("fHistoConfig");
   fHistoConfig->SetTitle("Configuration of the analysis");
   fHistoConfig->SetStats(kFALSE);
@@ -242,6 +252,7 @@ void AliAnalysisTaskHOCFA::BookFinalResults()
   fHistoConfig->GetXaxis()->SetBinLabel(3, "Min M");
   fHistoConfig->GetXaxis()->SetBinLabel(4, "NUE?");
   fHistoConfig->GetXaxis()->SetBinLabel(5, "NUA?");
+  fHistoConfig->GetXaxis()->SetBinLabel(6, "Eta gap?");
   fMainList->Add(fHistoConfig);
 
   for (int i = 0; i < fNCentralityBins; i++) {
@@ -267,7 +278,7 @@ void AliAnalysisTaskHOCFA::BookFinalResults()
 
     fHistoPt[i] = new TH1D("", "", 500, 0., 5.);
     fHistoPt[i]->SetName(Form("fHistoPt_Bin%d", i));
-    fHistoPt[i]->SetTitle(Form("Transverse momentum distribution, bin%d", i));
+    fHistoPt[i]->SetTitle(Form("Corrected transverse momentum distribution, bin%d", i));
     fHistoPt[i]->SetStats(kTRUE);
     fCentralityList[i]->Add(fHistoPt[i]);
 
@@ -279,7 +290,7 @@ void AliAnalysisTaskHOCFA::BookFinalResults()
 
     fHistoPhi[i] = new TH1D("", "", 630, -TMath::Pi(),TMath::Pi());
     fHistoPhi[i]->SetName(Form("fHistoPhi_Bin%d", i));
-    fHistoPhi[i]->SetTitle(Form("Azimuthal angle distribution, bin%d", i));
+    fHistoPhi[i]->SetTitle(Form("Corrected azimuthal angle distribution, bin%d", i));
     fHistoPhi[i]->SetStats(kTRUE);
     fCentralityList[i]->Add(fHistoPhi[i]);
 
@@ -288,6 +299,12 @@ void AliAnalysisTaskHOCFA::BookFinalResults()
     fHistoCharge[i]->SetTitle(Form("Charge distribution, bin%d", i));
     fHistoCharge[i]->SetStats(kTRUE);
     fCentralityList[i]->Add(fHistoCharge[i]);
+
+    fCorrelEtaGap[i] = new TProfile("", "", 8, 0., 8.);
+    fCorrelEtaGap[i]->SetName(Form("fCorrelEtaGap_Bin%d", i));
+    fCorrelEtaGap[i]->SetTitle(Form("|#it{#Delta #eta}| > %.1f, bin%d", fEtaGap, i));
+    fCorrelEtaGap[i]->SetStats(kTRUE);
+    if (fGetEtaGap) {fCentralityList[i]->Add(fCorrelEtaGap[i]);}
 
     for (Int_t j = 0; j < fNCombi; j++) {
       fCorrelTerms[j][i] = new TProfile("", "", 15, 0., 15.);
@@ -573,3 +590,67 @@ void AliAnalysisTaskHOCFA::CalculateCorrelator(int combi, int bin,
 }
 
 // ------------------------------------------------------------------------- //
+void AliAnalysisTaskHOCFA::ComputeEtaGaps(Long64_t multiplicity,
+  double angles[], double pWeights[], double pseudorapidity[])
+{
+// Calculate the two-particle correlators (v1..v8) with a given eta gap.
+  if (fDebugLevel > 5) {printf("Calculate 2-particle correlators with eta gap'.\n");}
+  TComplex Qminus[8] = {TComplex(0., 0.)};  // Q-vectors for the negative subevent.
+  float Mminus[8] = {0.};                   // Multiplicity of the negative subevent.
+  TComplex Qplus[8] = {TComplex(0., 0.)};
+  float Mplus[8] = {0.};
+
+  float iAngle = 0.;      // Azimuthal angle.
+  float iEta = 0.;        // Pseudorapidity.
+  float iWeight = 1.;     // Particle weight.
+  float iWeightToP = 1.;  // Particle weight raised to the power p.
+
+  TComplex cCorrel = TComplex(0., 0.);
+  double rCorrel = 0.;
+
+  for (Long64_t iPart = 0; iPart < multiplicity; iPart++) {
+    // Read the information for the current track.
+    iAngle  = angles[iPart];
+    iWeight = pWeights[iPart];
+    iEta    = pseudorapidity[iPart];
+    if (fUseWeightsNUE || fUseWeightsNUA) {iWeightToP = iWeight;}
+
+    // Compute the Q-vectors for each subevent.
+    if (iEta < 0.) {
+      for (int iHarmo = 0; iHarmo < 8; iHarmo++) {
+        // Compute only if the particle belongs to the subevent.
+        if (iEta < ((-0.5)*fEtaGap)) {
+          Qminus[iHarmo] += TComplex(iWeightToP*TMath::Cos((iHarmo+1)*iAngle),
+            iWeightToP*TMath::Sin((iHarmo+1)*iAngle));
+          Mminus[iHarmo] += iWeightToP;
+        }
+      }
+
+    } else if (iEta > 0.) {
+      for (int iHarmo = 0; iHarmo < 8; iHarmo++) {
+        if (iEta > 0.5*fEtaGap) {
+          Qplus[iHarmo] += TComplex(iWeightToP*TMath::Cos((iHarmo+1)*iAngle),
+            iWeightToP*TMath::Sin((iHarmo+1)*iAngle));
+          Mplus[iHarmo] += iWeightToP;
+        }
+      }
+
+    } else {continue;}  // Case iEta = 0.
+  }   // All the particles have been treated.
+
+  // Compute the two-particle correlators themselves.
+  for (int iHarmo = 0; iHarmo < 8; iHarmo++) {
+    if (!( (Qminus[iHarmo].TComplex::Rho() > 0.) && (Qplus[iHarmo].TComplex::Rho() > 0.) )) {continue;}
+    if (!( (Mminus[iHarmo] > 0.) && (Mplus[iHarmo] > 0.) )) {continue;}
+
+    cCorrel = Qminus[iHarmo]*TComplex::Conjugate(Qplus[iHarmo]);
+    rCorrel = (cCorrel.Re())/(Mminus[iHarmo]*Mplus[iHarmo]);
+    fCorrelEtaGap[fCentralityBin]->Fill((float)iHarmo + 0.5, rCorrel, Mminus[iHarmo]*Mplus[iHarmo]);
+    fCorrelEtaGap[fCentralityBin]->GetXaxis()->SetBinLabel(iHarmo + 1, Form("v_{%d}", iHarmo+1));
+
+    // Reset the correlators to prevent mixing between harmonics.
+    cCorrel = TComplex(0., 0.);
+    rCorrel = 0.;
+  }
+// All the 2-particle correlators with eta gaps have been calculated.
+}

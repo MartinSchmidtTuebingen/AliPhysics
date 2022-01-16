@@ -111,4 +111,10 @@
 #pragma link C++ class TrackInfoCorr+;
 #pragma link C++ class AliAnalysisTaskFluctMCTEPOS+;
 
+#pragma link C++ class AliAnalysisTaskParticleYieldRatioCorrelationsEfficiency+;
+#pragma link C++ class AliAnalysisTaskParticleYieldRatioCorrelations+;
+
+#pragma link C++ class AliAnalysisTaskResonanceVsMultiplicity+;
+#pragma link C++ class AliAnalysisTaskMeanptFluctuationPP+;
+
 #endif

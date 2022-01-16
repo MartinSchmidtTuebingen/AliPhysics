@@ -68,6 +68,7 @@
 #include "AliHelperClassFastSimulation.h"
 
 #include "AliAnalysisTaskIDFragmentationFunction.h"
+
 using std::cout;
 using std::endl;
 using std::cerr;
@@ -82,7 +83,6 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction()
    ,fAODJets(0)  
    ,fAODExtension(0)
    ,fNonStdFile("")
-   ,fCentralityEstimator("V0M")
    ,fMinMultiplicity(-1)
    ,fMaxMultiplicity(-1)
    ,fNameTrackContainer("Tracks")
@@ -93,7 +93,7 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction()
    ,fUseAODInputJets(kTRUE)
    ,fUsePhysicsSelection(kTRUE)
    ,fEvtSelectionMask(0)
-   ,fEventClass(0)
+   ,fEventClass(-1)
    ,fMaxVertexZ(10)
    ,fFFRadius(0)
    ,fFFMinLTrackPt(-1)
@@ -124,8 +124,8 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction()
    ,fhJetPtRefMultEta5(0)
    ,fhJetPtRefMultEta8(0)
    ,fhJetPtMultPercent(0)
-   ,fh2TrackDef(0x0)
    ,fh3trackDensity(0x0)
+   ,fh2TrackDef(0x0)
    ,fRandom(0)
    
    ,fOnlyLeadingJets(kFALSE)
@@ -165,7 +165,6 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction()
   
   if (fFillDCA) {
     for (Int_t i = 0; i < AliPID::kSPECIES; i++) {
-      
       fhDCA_XY_prim_MCID[i] = 0x0;
       fhDCA_Z_prim_MCID[i] = 0x0;
       
@@ -183,7 +182,6 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction(c
   ,fAODJets(0)  
   ,fAODExtension(0)
   ,fNonStdFile("")
-  ,fCentralityEstimator("V0M")
   ,fMinMultiplicity(-1)
   ,fMaxMultiplicity(-1)
   ,fNameTrackContainer("Tracks")
@@ -194,7 +192,7 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction(c
   ,fUseAODInputJets(kTRUE)
   ,fUsePhysicsSelection(kTRUE)
   ,fEvtSelectionMask(0)
-  ,fEventClass(0)
+  ,fEventClass(-1)
   ,fMaxVertexZ(10)
   ,fFFRadius(0)
   ,fFFMinLTrackPt(-1)
@@ -225,8 +223,8 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction(c
   ,fhJetPtRefMultEta5(0)
   ,fhJetPtRefMultEta8(0)
   ,fhJetPtMultPercent(0)
-  ,fh2TrackDef(0x0)
   ,fh3trackDensity(0x0)
+  ,fh2TrackDef(0x0)
   ,fRandom(0)
   ,fOnlyLeadingJets(kFALSE)
   ,fMCPtHardCut(-1.)
@@ -263,7 +261,6 @@ AliAnalysisTaskIDFragmentationFunction::AliAnalysisTaskIDFragmentationFunction(c
   
   if (fFillDCA) {
     for (Int_t i = 0; i < AliPID::kSPECIES; i++) {
-      
       fhDCA_XY_prim_MCID[i] = 0x0;
       fhDCA_Z_prim_MCID[i] = 0x0;
       
@@ -693,7 +690,6 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
 {	
   if(fDebug > 1) Printf("AliAnalysisTaskIDFragmentationFunction::FillHistograms()");
   
-  
   if(fDebug > 1) Printf("Analysis event #%5d", (Int_t) fEntry);
   
   fMCEvent = MCEvent();
@@ -705,9 +701,8 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
   
   Double_t ptHard = 0.;
   Double_t nTrials = 1; // trials for MC trigger weight for real data
-  Bool_t pythiaGenHeaderFound = kFALSE;
 
-  if(fMCEvent && kFALSE){
+  if(fMCEvent && kFALSE) {
     AliGenEventHeader* genHeader = fMCEvent->GenEventHeader();
     if(genHeader){
       
@@ -715,19 +710,21 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
       AliGenHijingEventHeader*  hijingGenHeader = 0x0;
       
       if(pythiaGenHeader){
-        if(fDebug>3) Printf("%s:%d pythiaGenHeader found", (char*)__FILE__,__LINE__);
-        pythiaGenHeaderFound = kTRUE;
+        if(fDebug>3) 
+            Printf("%s:%d pythiaGenHeader found", (char*)__FILE__,__LINE__);
         nTrials = pythiaGenHeader->Trials();
         ptHard  = pythiaGenHeader->GetPtHard();
       } else { // no pythia, hijing?
         
-        if(fDebug>3) Printf("%s:%d no pythiaGenHeader found", (char*)__FILE__,__LINE__);
+        if(fDebug>3) 
+            Printf("%s:%d no pythiaGenHeader found", (char*)__FILE__,__LINE__);
         
         hijingGenHeader = dynamic_cast<AliGenHijingEventHeader*>(genHeader);
         if(!hijingGenHeader){
           Printf("%s:%d no pythiaGenHeader or hjingGenHeader found", (char*)__FILE__,__LINE__);
         } else {
-          if(fDebug>3) Printf("%s:%d hijingGenHeader found", (char*)__FILE__,__LINE__);
+          if(fDebug>3) 
+              Printf("%s:%d hijingGenHeader found", (char*)__FILE__,__LINE__);
         }
       }
       
@@ -735,29 +732,12 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
     }
   }
   
-  
   // Cut on pThard if fMCEvent and pThard >= 0 and fill histo with #evt before and after the cut
   if (fMCEvent) {
     // Before cut
     fh1EvtsPtHardCut->Fill(0.); 
     
-    if (fUseInclusivePIDtask) {
-      for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
-        fInclusivePIDtask[i]->FillCutHisto(0., AliAnalysisTaskPID::kMCPtHardCut);
-      }
-    }    
-    
-    if (fUseJetPIDtask) {
-      for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
-        fJetPIDtask[i]->FillCutHisto(0., AliAnalysisTaskPID::kMCPtHardCut);
-      }
-    }
-    
-    if (fUseJetUEPIDtask) {
-      for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
-        fJetUEPIDtask[i]->FillCutHisto(0., AliAnalysisTaskPID::kMCPtHardCut);
-      }
-    }
+    FillPIDTasksCutHisto(0.0, AliAnalysisTaskPID::kMCPtHardCut);
     
     // Cut
     if (fMCPtHardCut >= 0. && ptHard >= fMCPtHardCut) {
@@ -768,25 +748,8 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
     
     // After cut
     fh1EvtsPtHardCut->Fill(1.);
-
-    if (fUseInclusivePIDtask) {
-      for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
-        fInclusivePIDtask[i]->FillCutHisto(1., AliAnalysisTaskPID::kMCPtHardCut);
-      }
-    }
     
-    if (fUseJetPIDtask) {
-      for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
-        fJetPIDtask[i]->FillCutHisto(1., AliAnalysisTaskPID::kMCPtHardCut);
-      }
-    }
-    
-    if (fUseJetUEPIDtask) {
-      for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
-        fJetUEPIDtask[i]->FillCutHisto(1., AliAnalysisTaskPID::kMCPtHardCut);
-      }
-    }    
- 
+    FillPIDTasksCutHisto(1.0, AliAnalysisTaskPID::kMCPtHardCut);    
   }
   
   // Trigger selection
@@ -802,10 +765,9 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
   
   fESD = dynamic_cast<AliESDEvent*>(InputEvent());
   if(!fESD){
-    if(fDebug>3) Printf("%s:%d ESDEvent not found in the input", (char*)__FILE__,__LINE__);
+    if(fDebug>3) 
+      Printf("%s:%d ESDEvent not found in the input", (char*)__FILE__,__LINE__);
   }
-  
-  
   
   // get AOD event from input/ouput
   TObject* handler = AliAnalysisManager::GetAnalysisManager()->GetInputEventHandler();
@@ -822,6 +784,9 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
       if (fDebug > 1)  Printf("%s:%d AOD event from output", (char*)__FILE__,__LINE__);
     }
   }
+  
+  if (!handler)
+      handler = inputHandler;
   
   if(!fAODJets && !fUseAODInputJets){ // case we have AOD in input & output and want jets from output
     TObject* outHandler = AliAnalysisManager::GetAnalysisManager()->GetOutputEventHandler();
@@ -842,12 +807,12 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
   }
   
   if(!fAOD){
-    Printf("%s:%d AODEvent not found", (char*)__FILE__,__LINE__);
-    return kFALSE;
+    if(fDebug>3) 
+      Printf("%s:%d AODEvent not found", (char*)__FILE__,__LINE__);
   }
   if(!fAODJets){
-    Printf("%s:%d AODEvent with jet branch not found", (char*)__FILE__,__LINE__);
-    return kFALSE;
+    if(fDebug>3) 
+      Printf("%s:%d AODEvent with jet branch not found", (char*)__FILE__,__LINE__);
   }
 
   
@@ -866,37 +831,24 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
       return kFALSE;
   }
   
-  Double_t centPercent = -1;
+  //TODO: Simplify getting centrality. Also should not depend on fIsPP, centrality can be always estiamted
   
-  if(fEventClass>0){
-    Int_t cl = 0;
-    if(handler->InheritsFrom("AliAODInputHandler")){ 
-      // since it is not supported by the helper task define own classes
-      centPercent = ((AliAODHeader*)fAOD->GetHeader())->GetCentrality();
-      cl = 1;
-      if(centPercent>10) cl = 2;
-      if(centPercent>30) cl = 3;
-      if(centPercent>50) cl = 4;
-    }
-    else {
-      cl = AliAnalysisHelperJetTasks::EventClass();
-      if(fESD) centPercent = fESD->GetCentrality()->GetCentralityPercentile(fCentralityEstimator.Data()); 
-    }
-    
-    if(cl!=fEventClass){
+  Double_t centPercent = fCent;
+  if (fEventClass > -1) {
+    if (fCentBin != fEventClass) {
       // event not in selected event class, reject event
-      if (fDebug > 1) Printf("%s:%d event not in selected event class: event REJECTED ...",(char*)__FILE__,__LINE__);
+      if (fDebug > 1) 
+        Printf("%s:%d event not in selected event class: event REJECTED ...",(char*)__FILE__,__LINE__);
+      
       fh1EvtSelection->Fill(2.);
       PostData(1, fCommonHistList);
       return kFALSE;
     }
   }
   
-  if (fCentralityEstimator.Contains("NoCentrality",TString::kIgnoreCase)) {
+  //Lines can be removed probably
+  if (fCentEst.Contains("NoCentrality",TString::kIgnoreCase)) {
     centPercent = -1;
-  }
-  else {
-    if (!fIsPP) centPercent = evtForCentDetermination->GetCentrality()->GetCentralityPercentile(fCentralityEstimator.Data());
   }
   
   AliPIDResponse *fPIDResponse = inputHandler->GetPIDResponse();
@@ -907,36 +859,19 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
   fPIDResponse->SetCurrentCentrality(centPercent);
 
   // Retrieve reference multiplicities in |eta|<0.8 and <0.5
-  const Int_t refMult5 = ((AliAODHeader*)fAOD->GetHeader())->GetRefMultiplicityComb05();
-  const Int_t refMult8 = ((AliAODHeader*)fAOD->GetHeader())->GetRefMultiplicityComb08();
-  const Double_t centPercentPP = fAnaUtils->GetMultiplicityPercentile(fAOD, "V0M");
+  const Int_t refMult5 = 0; //((AliAODHeader*)fAOD->GetHeader())->GetRefMultiplicityComb05();
+  const Int_t refMult8 = 0; //((AliAODHeader*)fAOD->GetHeader())->GetRefMultiplicityComb08();
+  const Double_t centPercentPP = fAnaUtils->GetMultiplicityPercentile(InputEvent(), "V0M");
   
   
-  // Count events with trigger selection, note: Set centrality percentile fix to -1 for pp for PID framework
-  if (fUseInclusivePIDtask) {
-    for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
-      fInclusivePIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSel);
-    }
-  }
-
-  if (fUseJetPIDtask) {
-    for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
-      fJetPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSel);
-    }
-  }
-  
-  if (fUseJetUEPIDtask) {
-    for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
-      fJetUEPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSel);
-    }
-  }  
+  IncrementPIDTasksEventCounts(centPercent, AliAnalysisTaskPID::kTriggerSel);
 
   // *** vertex cut ***
-  AliAODVertex* primVtx = fAOD->GetPrimaryVertex();
+  const AliVVertex* primVtx = InputEvent()->GetPrimaryVertex();
 	if (!primVtx) {
 		Printf("%s:%d Primary vertex not found", (char*)__FILE__,__LINE__);
 		return kFALSE;
-	}
+  }
 	
   Int_t nTracksPrim = primVtx->GetNContributors();
   fh1VertexNContributors->Fill(nTracksPrim);
@@ -951,62 +886,27 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
   }
   
   TString primVtxName(primVtx->GetName());
-
   if(primVtxName.CompareTo("TPCVertex",TString::kIgnoreCase) == 1){
-    if (fDebug > 1) Printf("%s:%d primary vertex selection: TPC vertex, event REJECTED...",(char*)__FILE__,__LINE__);
-    fh1EvtSelection->Fill(5.);
-    PostData(1, fCommonHistList);
-    return kFALSE;
+      if (fDebug > 1) Printf("%s:%d primary vertex selection: TPC vertex, event REJECTED...",(char*)__FILE__,__LINE__);
+      fh1EvtSelection->Fill(5.);
+      PostData(1, fCommonHistList);
+      return kFALSE;
   }
   
   // Count events with trigger selection and vtx cut, note: Set centrality percentile fix to -1 for pp for PID framework
-  if (fUseInclusivePIDtask) {
-    for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
-      fInclusivePIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCut);
-    }
-  }
-  
-  if (fUseJetPIDtask) {
-    for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
-      fJetPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCut);
-    }
-  }
-  
-  if (fUseJetUEPIDtask) {
-    for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
-      fJetUEPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCut);
-    }
-  }  
-
+  IncrementPIDTasksEventCounts(centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCut); 
   
   fh1VertexZ->Fill(primVtx->GetZ());
   
-  if(TMath::Abs(primVtx->GetZ())>fMaxVertexZ){
+  if(TMath::Abs(primVtx->GetZ())>fMaxVertexZ) {
     if (fDebug > 1) Printf("%s:%d primary vertex z = %f: event REJECTED...",(char*)__FILE__,__LINE__,primVtx->GetZ()); 
     fh1EvtSelection->Fill(4.);
     PostData(1, fCommonHistList);
     return kFALSE; 
   }
   
-  // Count events with trigger selection, vtx cut and z vtx cut, note: Set centrality percentile fix to -1 for pp for PID framework
-  if (fUseInclusivePIDtask) {
-    for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
-      fInclusivePIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCutNoPileUpRejection);
-    }
-  }
-  
-  if (fUseJetPIDtask) {
-    for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
-      fJetPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCutNoPileUpRejection);
-    }
-  }
-  
-  if (fUseJetUEPIDtask) {
-    for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
-      fJetUEPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCutNoPileUpRejection);
-    }
-  }  
-  
+  // Count events with trigger selection, vtx cut and z vtx cut
+  IncrementPIDTasksEventCounts(centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCutNoPileUpRejection);
   
   // Store for each task, whether this task would tag this event as pile-up or not
   const Int_t arrSizeInclusive = TMath::Max(1, fNumInclusivePIDtasks);
@@ -1030,43 +930,40 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
   Bool_t isPileUpForAllJetPIDTasks = kTRUE;
   Bool_t isPileUpForAllJetUEPIDTasks = kTRUE;
   
-  // Count events with trigger selection, vtx cut, z vtx cut and after pile-up rejection (if enabled in that task)
-  // Note: Set centrality percentile fix to -1 for pp for PID framework
   if (fUseInclusivePIDtask) {
     for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
-      isPileUpInclusivePIDtask[i] = fInclusivePIDtask[i]->GetIsPileUp(fAOD, fInclusivePIDtask[i]->GetPileUpRejectionType());
-      if (!isPileUpInclusivePIDtask[i])
-        fInclusivePIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCut);
-      
+      isPileUpInclusivePIDtask[i] = fInclusivePIDtask[i]->GetIsPileUp(InputEvent(), fInclusivePIDtask[i]->GetPileUpRejectionType());
       isPileUpForAllInclusivePIDTasks = isPileUpForAllInclusivePIDTasks && isPileUpInclusivePIDtask[i];
     }
   }
   
   if (fUseJetPIDtask) {
     for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
-      isPileUpJetPIDtask[i] = fJetPIDtask[i]->GetIsPileUp(fAOD, fJetPIDtask[i]->GetPileUpRejectionType());
-      if (!isPileUpJetPIDtask[i])
-        fJetPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCut);
-      
+      isPileUpJetPIDtask[i] = fJetPIDtask[i]->GetIsPileUp(InputEvent(), fJetPIDtask[i]->GetPileUpRejectionType());
       isPileUpForAllJetPIDTasks = isPileUpForAllJetPIDTasks && isPileUpJetPIDtask[i];
     }
   }
   
   if (fUseJetUEPIDtask) {
     for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
-      isPileUpJetUEPIDtask[i] = fJetUEPIDtask[i]->GetIsPileUp(fAOD, fJetUEPIDtask[i]->GetPileUpRejectionType());
-      if (!isPileUpJetUEPIDtask[i])
-        fJetUEPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCut);
-      
+      isPileUpJetUEPIDtask[i] = fJetUEPIDtask[i]->GetIsPileUp(InputEvent(), fJetUEPIDtask[i]->GetPileUpRejectionType());
       isPileUpForAllJetUEPIDTasks = isPileUpForAllJetUEPIDTasks && isPileUpJetUEPIDtask[i];
     }
   }
     
+  // Count events with trigger selection, vtx cut, z vtx cut and after pile-up rejection (if enabled in that task)
+  IncrementPIDTasksEventCounts(centPercent, AliAnalysisTaskPID::kTriggerSelAndVtxCutAndZvtxCut, isPileUpInclusivePIDtask, isPileUpJetPIDtask, isPileUpJetUEPIDtask);
   
+  if (fDebug > 1)
+      Printf("%s:%d event ACCEPTED ...",(char*)__FILE__,__LINE__); 
   
-  if (fDebug > 1) Printf("%s:%d event ACCEPTED ...",(char*)__FILE__,__LINE__); 
   fh1EvtSelection->Fill(0.);
-  fh1VtxSelection->Fill(primVtx->GetType());
+  
+  const AliAODVertex* aodVertex = dynamic_cast<const AliAODVertex*>(primVtx);
+  if (aodVertex) {
+      fh1VtxSelection->Fill(aodVertex->GetType());
+  }
+  
   fh1EvtCent->Fill(centPercent);
 
   // Set centrality percentile fix to -1 for pp to be used for the PID framework
@@ -1078,19 +975,19 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
   if (fUseInclusivePIDtask) {
     for (Int_t i = 0; i < fNumInclusivePIDtasks; i++)
       if (!isPileUpInclusivePIDtask[i])
-        fInclusivePIDtask[i]->ConfigureTaskForCurrentEvent(fAOD);
+        fInclusivePIDtask[i]->ConfigureTaskForCurrentEvent(InputEvent());
   }
   
   if (fUseJetPIDtask) {
     for (Int_t i = 0; i < fNumJetPIDtasks; i++)
       if (!isPileUpJetPIDtask[i])
-        fJetPIDtask[i]->ConfigureTaskForCurrentEvent(fAOD);
+        fJetPIDtask[i]->ConfigureTaskForCurrentEvent(InputEvent());
   }
   
   if (fUseJetUEPIDtask) {
     for (Int_t i = 0; i < fNumJetUEPIDtasks; i++)
       if (!isPileUpJetUEPIDtask[i])
-        fJetUEPIDtask[i]->ConfigureTaskForCurrentEvent(fAOD);
+        fJetUEPIDtask[i]->ConfigureTaskForCurrentEvent(InputEvent());
   }  
   
   
@@ -1401,9 +1298,10 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
       
       for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
         if (!isPileUpInclusivePIDtask[i] && (!fInclusivePIDtask[i]->GetUseTPCCutMIGeo() || survivedTPCCutMIGeo) && (!fInclusivePIDtask[i]->GetUseTPCnclCut() || survivedTPCnclCut)) {
-              if (fInclusivePIDtask[i]->IsInAcceptedEtaRange(TMath::Abs(part->Eta())))
+            if (fInclusivePIDtask[i]->IsInAcceptedEtaRange(TMath::Abs(part->Eta()))) {
                 fInclusivePIDtask[i]->ProcessTrack(part, pdg, centPercent, -1, kFALSE, kTRUE, -1, -1); // no jet pT etc since inclusive spectrum 
                 fInclusivePIDtask[i]->FillDCA(part, dEdxTPC, primVtx, fMCEvent, -1.0);
+            }
         }
       }
       
@@ -1480,12 +1378,11 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
           fh1nGenJets->Fill(jetPt);
           
           fJetPIDtask[i]->FillGenJets(centPercent, jetPt);
-					
-					for(Int_t it=0; it<jet->GetNumberOfTracks(); ++it) {
-						AliVParticle*   trackVP = dynamic_cast<AliVParticle*>(jet->Track(it));
-						PerformJetMonteCarloAnalysisGeneratedYield(jet, trackVP, fJetPIDtask[i], centPercent);
-					}
-					
+          
+          for(Int_t it=0; it<jet->GetNumberOfTracks(); ++it) {
+            AliVParticle*   trackVP = dynamic_cast<AliVParticle*>(jet->Track(it));
+            PerformJetMonteCarloAnalysisGeneratedYield(jet, trackVP, fJetPIDtask[i], centPercent);
+          }
           
           if (fOnlyLeadingJets)
             break;
@@ -1494,24 +1391,21 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
     }
   }
   
-  //   Fast simulations //TODO: Extend code so it can run all fast simulations in the same train (reducing output numbers and complexity)
+  // Fast simulations 
+  // TODO: Extend code so it can run all fast simulations in the same train (reducing output numbers and complexity)
   if (fUseJetPIDtask && mcJetContainer && !isPileUpForAllJetPIDTasks && fUseFastSimulations) {
-    
     for (Int_t i=0;i<fNumJetPIDtasks;i++) {
-      
       if (!isPileUpJetPIDtask[i]) {
-				
-				AliFJWrapper* wrapper = new AliFJWrapper("wrapper", "wrapper");        
-				SetUpFastJetWrapperWithOriginalValues(wrapper);  
-				Double_t jetMinPt = mcJetContainer->GetMinPt();
-				Double_t jetMaxEta = mcJetContainer->GetMaxEta() - mcJetContainer->GetJetRadius();
-				Double_t jetMinEta = mcJetContainer->GetMinEta() + mcJetContainer->GetJetRadius(); 
-				AliHelperClassFastSimulation* fastSimulation = new AliHelperClassFastSimulation(fEffFunctions, fFastSimEffFactor, fFastSimResFactor, fFastSimRes, jetMinPt, jetMaxEta, jetMinEta, wrapper);
-				
-				Int_t maxLabel = 0;
+        AliFJWrapper* wrapper = new AliFJWrapper("wrapper", "wrapper");        
+        SetUpFastJetWrapperWithOriginalValues(wrapper);  
+        Double_t jetMinPt = mcJetContainer->GetMinPt();
+        Double_t jetMaxEta = mcJetContainer->GetMaxEta() - mcJetContainer->GetJetRadius();
+        Double_t jetMinEta = mcJetContainer->GetMinEta() + mcJetContainer->GetJetRadius(); 
+        AliHelperClassFastSimulation* fastSimulation = new AliHelperClassFastSimulation(fEffFunctions, fFastSimEffFactor, fFastSimResFactor, fFastSimRes, jetMinPt, jetMaxEta, jetMinEta, wrapper);
+
+        Int_t maxLabel = 0;
 
         for(auto jet : mcJetContainer->accepted()) {
-            
           if(!jet) 
             continue;
           
@@ -1523,98 +1417,97 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
           fh1nGenJets->Fill(jetPt);
           
           fJetPIDtask[i]->FillGenJets(centPercent, jetPt);
-					
-					AliAODMCParticle* leadingTrack = dynamic_cast<AliAODMCParticle*>(jet->GetLeadingTrack());
-					
-					Double_t leadingTrackPt = leadingTrack->Pt();
-					Double_t smallestTrackPt = leadingTrackPt;
-					
-					for(Int_t it=0; it<jet->GetNumberOfTracks(); ++it) {
-						AliAODMCParticle*   track = dynamic_cast<AliAODMCParticle*>(jet->Track(it));
-						if (track != leadingTrack && fFFChange == 2) {
-							//Low pT depletion
-							if (fRandom->Rndm() > 0.75)
-								continue;
-						}
-						FillEfficiencyContainerFromTrack(track, jet, centPercent, AliAnalysisTaskPID::kStepGenWithGenCuts);
-						
-						fastSimulation->AddParticle(track);
-						
-						if (fFFChange == 1) {
-							smallestTrackPt = TMath::Min(track->Pt(), smallestTrackPt);	
-							maxLabel = TMath::Max(maxLabel, track->GetLabel());
-						}
-					}
-															
-					if (fFFChange == 1) {
-						Double_t jetPhi = jet->Phi();
-						Double_t jetTheta = jet->Theta();
-						
-						Int_t current_index = maxLabel + 1;
-				
-						for(Int_t it=0; it<jet->GetNumberOfTracks(); ++it) {
-							AliAODMCParticle *track  = dynamic_cast<AliAODMCParticle*>(jet->Track(it));
-								
-							if (!track || jet->Track(it) == leadingTrack)
-								continue;  
-							
-							Double_t pt = track->Pt();
-	// 					Low pT enhancement
-							Double_t survivalChance = 0.25 + 0.5 * (pt - smallestTrackPt)/(leadingTrackPt - smallestTrackPt);
-							if (fRandom->Rndm() > survivalChance)
-								continue;
-							
-							Double_t phi = track->Phi();
-							Double_t theta = track->Theta();
-							Double_t momentum = track->P();	
-							
-	// 					Rotate 180° around jet axis
-							phi = 2.0 * jetPhi - phi;
-							theta = 2.0 * jetTheta - theta;
-							Double_t eta = -TMath::Log(TMath::Tan(0.5 * theta));
-							
-							Double_t px = pt * TMath::Cos(phi);
-							Double_t py = pt * TMath::Sin(phi);
-							Double_t pz = pt * TMath::SinH(eta);
-							Double_t mass = track->M();
-							Double_t energy = TMath::Sqrt(pt * pt + pz * pz + mass*mass);
-							
-							TParticle* tpart = new TParticle(track->GetPdgCode(), 0, 0, 0, 0, 0, px, py, pz, energy, 0.0, 0.0, 0.0, 0.0);
-							AliMCParticle* mcParticle = new AliMCParticle(tpart);
-							AliAODMCParticle* doubled_part = new AliAODMCParticle(mcParticle, current_index);
+          
+          AliAODMCParticle* leadingTrack = dynamic_cast<AliAODMCParticle*>(jet->GetLeadingTrack());
+          
+          Double_t leadingTrackPt = leadingTrack->Pt();
+          Double_t smallestTrackPt = leadingTrackPt;
+          
+          for(Int_t it=0; it<jet->GetNumberOfTracks(); ++it) {
+            AliAODMCParticle*   track = dynamic_cast<AliAODMCParticle*>(jet->Track(it));
+            if (track != leadingTrack && fFFChange == 2) {
+              //Low pT depletion
+              if (fRandom->Rndm() > 0.75)
+                continue;
+            }
+            FillEfficiencyContainerFromTrack(track, jet, centPercent, AliAnalysisTaskPID::kStepGenWithGenCuts);
+            
+            fastSimulation->AddParticle(track);
+            
+            if (fFFChange == 1) {
+              smallestTrackPt = TMath::Min(track->Pt(), smallestTrackPt);	
+              maxLabel = TMath::Max(maxLabel, track->GetLabel());
+            }
+          }
+                            
+          if (fFFChange == 1) {
+            Double_t jetPhi = jet->Phi();
+            Double_t jetTheta = jet->Theta();
+            
+            Int_t current_index = maxLabel + 1;
+        
+            for(Int_t it=0; it<jet->GetNumberOfTracks(); ++it) {
+              AliAODMCParticle *track  = dynamic_cast<AliAODMCParticle*>(jet->Track(it));
+                
+              if (!track || jet->Track(it) == leadingTrack)
+                continue;  
+              
+              Double_t pt = track->Pt();
+              // Low pT enhancement
+              Double_t survivalChance = 0.25 + 0.5 * (pt - smallestTrackPt)/(leadingTrackPt - smallestTrackPt);
+              if (fRandom->Rndm() > survivalChance)
+                continue;
+            
+              Double_t phi = track->Phi();
+              Double_t theta = track->Theta();
+              
+              // Rotate 180° around jet axis
+              phi = 2.0 * jetPhi - phi;
+              theta = 2.0 * jetTheta - theta;
+              Double_t eta = -TMath::Log(TMath::Tan(0.5 * theta));
+              
+              Double_t px = pt * TMath::Cos(phi);
+              Double_t py = pt * TMath::Sin(phi);
+              Double_t pz = pt * TMath::SinH(eta);
+              Double_t mass = track->M();
+              Double_t energy = TMath::Sqrt(pt * pt + pz * pz + mass*mass);
+              
+              TParticle* tpart = new TParticle(track->GetPdgCode(), 0, 0, 0, 0, 0, px, py, pz, energy, 0.0, 0.0, 0.0, 0.0);
+              AliMCParticle* mcParticle = new AliMCParticle(tpart);
+              AliAODMCParticle* doubled_part = new AliAODMCParticle(mcParticle, current_index);
 
-							FillEfficiencyContainerFromTrack(doubled_part, jet, centPercent, AliAnalysisTaskPID::kStepGenWithGenCuts);
-							fastSimulation->AddParticle(doubled_part);
-							
-							current_index++;	
-						}
-					}
+              FillEfficiencyContainerFromTrack(doubled_part, jet, centPercent, AliAnalysisTaskPID::kStepGenWithGenCuts);
+              fastSimulation->AddParticle(doubled_part);
+              
+              current_index++;	
+            }
+          }
         }  
         
-				fastSimulation->Run();
+        fastSimulation->Run();
 
-				for (UInt_t j=0;j<fastSimulation->GetNJets();++j) {
-					
-					AliEmcalJet *jet = fastSimulation->GetJet(j);
-				
-					Double_t jetPt = jet->Pt();
-					
-					for (Int_t i=0;i<fNumJetPIDtasks;++i) {
-						fJetPIDtask[i]->FillRecJets(centPercent, jetPt);
-					}    
-
-					for (UInt_t ic = 0;ic<fastSimulation->GetNParticlesOfJet(j);++ic) {
-						AliAODMCParticle* part = fastSimulation->GetTrackOfJet(ic, j);
-						
-						if (!part)
-							continue;
-						
-						FillEfficiencyContainerFromTrack(part, jet, centPercent, AliAnalysisTaskPID::kStepRecWithRecCutsMeasuredObsPrimaries);
-					}
-				}
+        for (UInt_t j=0;j<fastSimulation->GetNJets();++j) {
+          
+          AliEmcalJet *jet = fastSimulation->GetJet(j);
         
-				delete fastSimulation;
-				fastSimulation = 0x0;
+          Double_t jetPt = jet->Pt();
+        
+          for (Int_t i=0;i<fNumJetPIDtasks;++i) {
+            fJetPIDtask[i]->FillRecJets(centPercent, jetPt);
+          }    
+
+          for (UInt_t ic = 0;ic<fastSimulation->GetNParticlesOfJet(j);++ic) {
+            AliAODMCParticle* part = fastSimulation->GetTrackOfJet(ic, j);
+            
+            if (!part)
+              continue;
+          
+            FillEfficiencyContainerFromTrack(part, jet, centPercent, AliAnalysisTaskPID::kStepRecWithRecCutsMeasuredObsPrimaries);
+          }
+        }
+        
+        delete fastSimulation;
+        fastSimulation = 0x0;
       }
     }
   }
@@ -1642,8 +1535,8 @@ Bool_t AliAnalysisTaskIDFragmentationFunction::FillHistograms()
 
   AliJetContainer* jetContainer = GetJetContainer(GetNameJetContainer());
   
-//   printf("Own Jet finder:\n");
-  if (GetDoGroomedJets() && trackContainer && kFALSE /*ATTENTION Deactivated*/) {
+  // printf("Own Jet finder:\n");
+  if (GetDoGroomedJets() && trackContainer) {
     AliFJWrapper* wrapper = new AliFJWrapper("wrapper","wrapper");
     SetUpFastJetWrapperWithOriginalValues(wrapper);    
     AliTrackIterableMomentumContainer itcont = trackContainer->accepted_momentum();
@@ -2123,10 +2016,10 @@ AliEmcalJet* AliAnalysisTaskIDFragmentationFunction::GetRandomCone(AliEmcalJet* 
     jetRC = new AliEmcalJet(jetPt, dEta, dPhi, jetM);             //new RC candidate
     ++i;          
   }
-  while (i<fRCTrials && OverlapsWithAnyRecJet(jetRC,dDistance));   
+  while (i<fRCTrials && OverlapsWithAnyRecJet(jetRC, dDistance));   
   
   //If the last jet is also overlapping, delete it and set pointer to zero
-  if(OverlapsWithAnyRecJet(jetRC,dDistance)) {
+  if(OverlapsWithAnyRecJet(jetRC, dDistance)) {
     delete jetRC;
     jetRC = 0x0;
   }
@@ -2141,9 +2034,7 @@ AliEmcalJet* AliAnalysisTaskIDFragmentationFunction::GetPerpendicularCone(AliEmc
   if (!processedJet)
     return 0x0;
   
-  Double_t dDistance = 2.0 * TMath::Abs(GetFFRadius());
-  
-  AliEmcalJet* perpJet = new AliEmcalJet(processedJet->Pt(), processedJet->Eta(), processedJet->Phi()+perpAngle, processedJet->M());
+  AliEmcalJet* perpJet = new AliEmcalJet(processedJet->Pt(), processedJet->Eta(), processedJet->Phi() + perpAngle, processedJet->M());
   
   if (GetUseRealJetArea())
     perpJet->SetArea(processedJet->Area());
@@ -2211,8 +2102,6 @@ TList* AliAnalysisTaskIDFragmentationFunction::GetTracksInCone(const AliEmcalJet
   }
   return jetTrackList;
 }
-
-//End of underlying event calculations
 
 void AliAnalysisTaskIDFragmentationFunction::PerformJetMonteCarloAnalysisGeneratedYield(AliEmcalJet* jet, AliVParticle* trackVP, AliAnalysisTaskPID* task, Double_t centPercent, AliJetContainer* mcJetContainer) {
   if (!jet || !trackVP || !task)
@@ -2356,10 +2245,11 @@ void AliAnalysisTaskIDFragmentationFunction::AnalyseJetTrack(AliVTrack* track, A
     }
     else {
       for (Int_t i=0;i<fNumJetPIDtasks;++i) {
-        if (!trackRejectedByTask[i])
+        if (!trackRejectedByTask[i]) {
           fJetPIDtask[i]->FillEfficiencyContainer(valueRecAllCuts, AliAnalysisTaskPID::kStepRecWithRecCutsMeasuredObs);
           fJetPIDtask[i]->FillEfficiencyContainer(valueRecAllCuts, AliAnalysisTaskPID::kStepRecWithRecCutsMeasuredObsStrangenessScaled,
                                             weight);
+        }
       }
     }                  
                         
@@ -2384,10 +2274,11 @@ void AliAnalysisTaskIDFragmentationFunction::AnalyseJetTrack(AliVTrack* track, A
       }
       else {
         for (Int_t i=0;i<fNumJetPIDtasks;++i) {
-          if (!trackRejectedByTask[i])
+          if (!trackRejectedByTask[i]) {
             fJetPIDtask[i]->FillEfficiencyContainer(valueRecAllCuts, AliAnalysisTaskPID::kStepRecWithRecCutsMeasuredObsPrimaries);
             fJetPIDtask[i]->FillEfficiencyContainer(valueGenAllCuts, AliAnalysisTaskPID::kStepRecWithRecCutsPrimaries);                                                     
             fJetPIDtask[i]->FillPtResolution(mcID, valuePtResolution); 
+          }
         }
       }         
       
@@ -2434,9 +2325,10 @@ void AliAnalysisTaskIDFragmentationFunction::AnalyseJetTrack(AliVTrack* track, A
         }
         else {
           for (Int_t i=0;i<fNumJetPIDtasks;++i) {
-            if (!trackRejectedByTask[i])
+            if (!trackRejectedByTask[i]) {
               fJetPIDtask[i]->FillEfficiencyContainer(value, AliAnalysisTaskPID::kStepRecWithGenCuts);
-              fJetPIDtask[i]->FillEfficiencyContainer(valueMeas, AliAnalysisTaskPID::kStepRecWithGenCutsMeasuredObs);                                                      
+              fJetPIDtask[i]->FillEfficiencyContainer(valueMeas, AliAnalysisTaskPID::kStepRecWithGenCutsMeasuredObs);       
+            }
           }
         }             
       } 
@@ -2470,7 +2362,7 @@ void AliAnalysisTaskIDFragmentationFunction::FillDCA(AliVTrack* track, AliMCPart
   
   Double_t v[3]   = {0, };
   Double_t pos[3] = {0, };
-  AliAODVertex* primVtx = fAOD->GetPrimaryVertex();
+  const AliVVertex* primVtx = InputEvent()->GetPrimaryVertex();
   if (!primVtx) {
     std::cout << "Primary Vertex not found, do not fill DCA" << std::endl;
     return;
@@ -2503,8 +2395,8 @@ void AliAnalysisTaskIDFragmentationFunction::SetUpFastJetWrapperWithOriginalValu
   wrapper->SetGhostArea(0.005);
   wrapper->SetR(TMath::Abs(GetFFRadius()));
   //Currently not working, including AliEmcalJetTask fails
-//         wrapper->SetAlgorithm(AliEmcalJetTask::ConvertToFJAlgo(jetContainer->GetJetAlgorithm()));
-//         wrapper->SetRecombScheme(AliEmcalJetTask::ConvertToFJRecoScheme(jetContainer->GetRecombinationScheme()));
+  //wrapper->SetAlgorithm(AliEmcalJetTask::ConvertToFJAlgo(jetContainer->GetJetAlgorithm()));
+  //wrapper->SetRecombScheme(AliEmcalJetTask::ConvertToFJRecoScheme(jetContainer->GetRecombinationScheme()));
   wrapper->SetAlgorithm(fastjet::antikt_algorithm);
   wrapper->SetRecombScheme(fastjet::pt_scheme);
   wrapper->SetMaxRap(1);    
@@ -2528,4 +2420,54 @@ void AliAnalysisTaskIDFragmentationFunction::FillEfficiencyContainerFromTrack(Al
 	for (Int_t i=0;i<fNumJetPIDtasks;++i) {
 		fJetPIDtask[i]->FillEfficiencyContainer(values, step);
 	}	
+}
+
+void AliAnalysisTaskIDFragmentationFunction::FillPIDTasksCutHisto(Double_t value, AliAnalysisTaskPID::CutHistoType histoType) {
+  if (fUseInclusivePIDtask) {
+    for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
+      fInclusivePIDtask[i]->FillCutHisto(value, histoType);
+    }
+  }    
+  
+  if (fUseJetPIDtask) {
+    for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
+      fJetPIDtask[i]->FillCutHisto(value, histoType);
+    }
+  }
+  
+  if (fUseJetUEPIDtask) {
+    for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
+      fJetUEPIDtask[i]->FillCutHisto(value, histoType);
+    }
+  }
+}
+
+void AliAnalysisTaskIDFragmentationFunction::IncrementPIDTasksEventCounts(Double_t centPercent, AliAnalysisTaskPID::EventCounterType eventCounterType, Bool_t* isPileUpInclusivePIDtask, Bool_t* isPileUpJetPIDtask, Bool_t* isPileUpJetUEPIDtask) {
+  // Count events with trigger selection, note: Set centrality percentile fix to -1 for pp for PID framework
+  if (fUseInclusivePIDtask) {
+    for (Int_t i = 0; i < fNumInclusivePIDtasks; i++) {
+      if (isPileUpInclusivePIDtask && isPileUpInclusivePIDtask[i])
+          continue;
+      
+      fInclusivePIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, eventCounterType);
+    }
+  }
+
+  if (fUseJetPIDtask) {
+    for (Int_t i = 0; i < fNumJetPIDtasks; i++) {
+      if (isPileUpJetPIDtask && isPileUpJetPIDtask[i])
+        continue;
+      
+      fJetPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, eventCounterType);
+    }
+  }
+  
+  if (fUseJetUEPIDtask) {
+    for (Int_t i = 0; i < fNumJetUEPIDtasks; i++) {
+      if (isPileUpJetUEPIDtask && isPileUpJetUEPIDtask[i])
+        continue;
+      
+      fJetUEPIDtask[i]->IncrementEventCounter(fIsPP ? -1. : centPercent, eventCounterType);
+    }
+  }  
 }
